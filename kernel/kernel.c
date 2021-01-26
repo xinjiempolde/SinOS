@@ -21,6 +21,11 @@ void kernel_main() {
     install_isr();
     install_irq();
 
-    memcheck(0x00400000, 0xbfffffff);
+    // mem_check(0x00400000, 0xbfffffff);
+    mem_init(memman);
+    mem_free(memman, 0x400000, 0x1000000);
+    mem_allocate(memman, 4 * 1024 * 1024);
+    uint32_t d = mem_total(memman);
+    printf("size: %x", d);
     while(1);
 }

@@ -6,7 +6,7 @@
 int uint_to_dec(unsigned int n, char s[]) {
     int i = 0;
     if (n == 0) {
-        s[i++] = 0;
+        s[i++] = '0';
     }
 
     while (n != 0) {
@@ -26,10 +26,10 @@ int uint_to_dec(unsigned int n, char s[]) {
  */
 int uint_to_hex(unsigned int n, char s[]) {
     int i = 0;
-    char hexChar[16] = {'0', '1','2','3', '4','5','6', '7','8','9', 'a','b','b', 'd','e','f'};
+    char hexChar[16] = {'0', '1','2','3', '4','5','6', '7','8','9', 'a','b','c', 'd','e','f'};
 
     if (n == 0) {
-        s[i++] = 0;
+        s[i++] = '0';
     }
 
     while (n != 0) {
