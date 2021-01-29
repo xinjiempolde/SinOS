@@ -30,12 +30,14 @@
 #define LIGHT_DARK_BLUE 14
 #define DARK_GRAY 15
 
+#define TRANSPARENT 99
+
 #define SLIDE_BAR_H 28
 
 
 void init_palette();
 
-void fill_rect(int x0, int y0, int w, int h, uint8_t color);
+void fill_rect(uint8_t*buf, int x0, int y0, int w, int h, uint8_t color);
 void put_char(int x0, int y0, char c, uint8_t color);
 void put_string(int x0, int y0, char* str, uint8_t color);
 

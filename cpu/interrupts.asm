@@ -60,6 +60,7 @@ irq1:
     push 33
     jmp irq_common
 
+; mouse interrupt
 irq12:
     cli
     push 0x0

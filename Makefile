@@ -7,7 +7,7 @@ KERNEL_ADDR = 0x10000
 CC          = i386-elf-gcc
 LD          = i386-elf-ld
 CFLAGS      = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32 -nostdinc -I include
-C_SOURCES   = ${wildcard cpu/*c drivers/*.c kernel/*.c libc/*.c mm/*.c}
+C_SOURCES   = ${wildcard cpu/*c drivers/*.c kernel/*.c libc/*.c mm/*.c gui/*.c}
 OBJ         = ${C_SOURCES:.c=.o cpu/interrupts.o mm/cache.o}
 
 $(IMG_FILE): bootsect.bin $(LOADER) $(KERNEL)
@@ -51,3 +51,4 @@ run: $(IMG_FILE)
 .PHONY: clean
 clean:
 	rm -rf *.bin *.BIN *.img ./*/*.o
+	rm -rf symbol.elf

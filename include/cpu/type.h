@@ -8,6 +8,8 @@ typedef unsigned int uint32_t;
 typedef char* va_list;
 
 typedef int bool;
+
+#define NULL 0
 #define TRUE 1
 #define FALSE 0
 

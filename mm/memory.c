@@ -4,7 +4,7 @@
 
 #include <drivers/vga.h>
 #include <libc/string.h>
-MemMan* memman = (MemMan*)MEM_MAN_ADDR;
+
 uint32_t mem_check(uint32_t start, uint32_t end) {
     uint32_t eflags = load_eflags();
     uint32_t memtotal = 0;
@@ -28,8 +28,12 @@ uint32_t mem_check(uint32_t start, uint32_t end) {
     if (flg486) {
         disable_cache();
     }
-    
+
     memtotal = mem_check_sub(start, end);
+
+    if (flg486) {
+        enable_cache();
+    }
     return memtotal;
 
 }
@@ -41,25 +45,26 @@ uint32_t mem_check(uint32_t start, uint32_t end) {
  */
 uint32_t mem_check_sub(uint32_t start, uint32_t end) {
     uint8_t t1 = 0x55, t2 = 0xaa;
-    uint8_t old;
-    uint8_t* i;
+    uint8_t old, *p;
+    uint32_t i;
     // check 4KB each time
     for (i = start; i < end; i=i+0x1000) {
-        old = *(i + 0x1000-1); // check the last byte of 4KB
-        *i = t1;
-        *i ^= 0xff;
-        if (*i != t2) {
-            *i = old;
+        p = (uint8_t*)(i + 0x1000-1); // check the last byte of 4KB
+        old = *p;
+        *p = t1;
+        *p ^= 0xff;
+        if (*p != t2) {
+            *p = old;
             return i;
         }
 
-        *i ^= 0xff;
-        if (*i != t1) {
-            *i = old;
+        *p ^= 0xff;
+        if (*p != t1) {
+            *p = old;
             return i;
         }
 
-        *i = old;
+        *p = old;
     }
     return i;
 }
@@ -156,4 +161,19 @@ bool mem_free(MemMan* memman, uint32_t addr, uint32_t size) {
         memman->frees[i].size = size;
         return TRUE;
     }
+}
+
+uint32_t mem_alloc_4k(MemMan* memman, uint32_t size) {
+    uint32_t a;
+    size = (size + 0xfff) & 0xfffff000;  // round up by 0x1000(4K)
+    a =  mem_allocate(memman, size);
+    return a;
+}
+
+
+bool mem_free_4k(MemMan* memman, uint32_t addr, uint32_t size) {
+    uint32_t a;
+    size = (size + 0xfff) & 0xfffff000;  // round up by 0x1000(4K)
+    a = mem_free(memman, addr, size);
+    return a;
 }

@@ -5,9 +5,9 @@
 #include <libc/mem.h>
 #include <drivers/ports.h>
 #include <drivers/vga.h>
+#include <gui/layer.h>
 static int offset = 0;
 static char buffer[3];
-static char mouse_cursor_buff[256];
 
 typedef struct {
     int x;
@@ -15,6 +15,10 @@ typedef struct {
 } mouse_info;
 
 static mouse_info m_info;
+
+/* definition in kernel.c */
+extern LayerManager* layman;
+extern Layer* mouse_layer;
 
 int write_ready() {
     if ((port_byte_in(MOUSE_STATE_PORT) & 0x02) == 0) {
@@ -66,7 +70,7 @@ static void mouse_callback(registers_t r) {
     offset = (offset + 1) % 3;
 
     if (offset == 0) {
-        fill_rect(m_info.x, m_info.y, 16, 16, LIGHT_BRIGHT_BLUE);
+        //fill_rect(m_info.x, m_info.y, 16, 16, LIGHT_BRIGHT_BLUE);
 
         /* I don't understand why I can't change the bottom of 8 lines if
            I don't add this code.
@@ -77,12 +81,10 @@ static void mouse_callback(registers_t r) {
         m_info.x += buffer[1];
         m_info.y -= buffer[2];
         if (m_info.x < 0) m_info.x = 0;
-        if (m_info.x >= SCREEN_W-16) m_info.x = SCREEN_W-16;
+        if (m_info.x >= SCREEN_W-1) m_info.x = SCREEN_W-1;
         if (m_info.y < 0) m_info.y = 0;
-        if (m_info.y >= SCREEN_H-16) m_info.y = SCREEN_H-16;
-        
-        put_cursor(m_info.x, m_info.y);
-
+        if (m_info.y >= SCREEN_H-1) m_info.y = SCREEN_H-1;
+        move_layer(layman, mouse_layer, m_info.x, m_info.y);
         
     }
     UNUSED(r);
@@ -93,7 +95,7 @@ void init_mouse() {
     add_interrupt_handler(IRQ12, mouse_callback);
 }
 
-void init_mouse_cursor() {
+void init_mouse_cursor(uint8_t* mouse_cursor_buff) {
     static char cursor[16][16] = {
         "**************..",
         "*OOOOOOOOOOO*...",
@@ -121,19 +123,9 @@ void init_mouse_cursor() {
             } else if (cursor[i][j] == 'O') {
                 mouse_cursor_buff[i*16 + j] = WHITE;
             } else if (cursor[i][j] == '.') {
-                mouse_cursor_buff[i*16 + j] = LIGHT_BRIGHT_BLUE;
+                mouse_cursor_buff[i*16 + j] = TRANSPARENT;
             }
         }
     }
 }
 
-void put_cursor(int x0, int y0) {
-    char* p_dst_start = (char*)(VIDEO_13H_ADDRESS + y0 * SCREEN_W + x0);
-    char *p_dst, *p_src;
-    int i;
-    for (i = 0; i < 16; i++) {
-        p_dst = p_dst_start + i*SCREEN_W;
-        p_src = mouse_cursor_buff + 16*i;
-        memory_copy(p_src, p_dst, 16);
-    }
-}

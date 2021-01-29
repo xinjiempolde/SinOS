@@ -5,7 +5,6 @@
 #include <libc/string.h>
 void set_palette(int start, int end, uint8_t* rgb);
 void put_pixel(int row, int col, uint8_t color);
-void fill_rect(int x0, int y0, int w, int h, uint8_t color);
 
 
 void init_palette() {
@@ -42,12 +41,11 @@ void set_palette(int start, int end, uint8_t* rgb) {
     }
 }
 
-void fill_rect(int x0, int y0, int w, int h, uint8_t color) {
-    uint8_t* vram = (uint8_t*)0xa0000;
+void fill_rect(uint8_t* buf, int x0, int y0, int w, int h, uint8_t color) {
     int x, y;
     for (y = y0; y < y0 + h; y++) {
         for (x = x0; x < x0 + w; x++) {
-            vram[x + y * SCREEN_W] = color;
+            buf[x + y * SCREEN_W] = color;
         }
     }
 }

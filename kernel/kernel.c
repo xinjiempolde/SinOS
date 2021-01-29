@@ -2,30 +2,33 @@
 #include <cpu/isr.h>
 #include <drivers/mouse.h>
 #include <mm/memory.h>
+#include <gui/layer.h>
+#include <gui/background.h>
+MemMan* memman = (MemMan*)MEM_MAN_ADDR;
+LayerManager* layman;
+Layer* mouse_layer;
 void kernel_main() {
     init_palette();
-
-    fill_rect(0, 0, SCREEN_W, SCREEN_H - SLIDE_BAR_H, LIGHT_BRIGHT_BLUE);
-    fill_rect(0, SCREEN_H - SLIDE_BAR_H - 3, SCREEN_W, 1, BRIGHT_GRAY);
-    fill_rect(0, SCREEN_H - SLIDE_BAR_H - 2, SCREEN_W, 1, WHITE);
-    fill_rect(0, SCREEN_H - SLIDE_BAR_H - 1, SCREEN_W, 1, BRIGHT_GRAY);
-
-    fill_rect(0, SCREEN_H - SLIDE_BAR_H, SCREEN_W, SLIDE_BAR_H, DARK_GRAY);
-
-    fill_rect(2, SCREEN_H - SLIDE_BAR_H + 2, 60, SLIDE_BAR_H - 4, BLACK);
-    fill_rect(2, SCREEN_H - SLIDE_BAR_H + 2, 58, SLIDE_BAR_H - 6, WHITE);
-    fill_rect(4, SCREEN_H - SLIDE_BAR_H + 4, 56, SLIDE_BAR_H - 8, DARK_GRAY);
-
-    init_mouse_cursor();
 
     install_isr();
     install_irq();
 
-    // mem_check(0x00400000, 0xbfffffff);
     mem_init(memman);
-    mem_free(memman, 0x400000, 0x1000000);
-    mem_allocate(memman, 4 * 1024 * 1024);
-    uint32_t d = mem_total(memman);
-    printf("size: %x", d);
+    mem_free(memman, 0x200000, 0x8000000); // 2MB~128MB
+    
+    uint8_t* mouse_buf = mem_alloc_4k(memman, 1024);
+    uint8_t* back_buf = mem_alloc_4k(memman, 0x10000);
+    init_mouse_cursor(mouse_buf);
+    init_background(back_buf);
+    
+    layman = init_layman(memman);
+    mouse_layer = alloc_layer(layman, mouse_buf, 16, 16, 1);
+    Layer* back_layer = alloc_layer(layman, back_buf, SCREEN_H, SCREEN_W, 0);
+    add_layer(layman, mouse_layer);
+    add_layer(layman, back_layer);
+
+    /* just vmware's bug, add this line to avoid */
+    fill_rect((uint8_t*)0xa0000, 0, 0, 0, 0, BLACK);
+    repaint_layers(layman);
     while(1);
 }
