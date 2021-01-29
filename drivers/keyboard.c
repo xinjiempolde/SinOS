@@ -3,7 +3,7 @@
 #include <libc/function.h>
 #include <libc/string.h>
 #include <drivers/ports.h>
-#include <drivers/vga.h>
+#include <gui/vga.h>
 /* 103 keyboard map table */
 static char* shirt_table[] = {  "ESC", "!", "@", "#", "$", 
                                 "%", "^", "&", "*", "(", 
@@ -65,7 +65,7 @@ static void keyboard_callback(registers_t r) {
         }
 
         strcat(key_buff, str);
-        put_string(0, 0, str, BLACK);
+        printf(str);
     }
     UNUSED(r);
 

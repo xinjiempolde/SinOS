@@ -2,7 +2,7 @@
 #include <cpu/register.h>
 #include <cpu/type.h>
 
-#include <drivers/vga.h>
+#include <gui/vga.h>
 #include <libc/string.h>
 
 uint32_t mem_check(uint32_t start, uint32_t end) {

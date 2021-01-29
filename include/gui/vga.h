@@ -37,11 +37,12 @@
 
 void init_palette();
 
-void fill_rect(uint8_t*buf, int x0, int y0, int w, int h, uint8_t color);
-void put_char(int x0, int y0, char c, uint8_t color);
-void put_string(int x0, int y0, char* str, uint8_t color);
+void fill_rect(uint8_t*buf, int buf_w, int x0, int y0, int w, int h, uint8_t color);
+void put_char(uint8_t* buf, int buf_w, int x0, int y0, char c, uint8_t color);
+void put_string(uint8_t* buf, int buf_w, int x0, int y0, char* str, uint8_t color);
 
 void printf(const char* fmt, ...);
+void sprintf(char* buf, const char* fmp, ...);
 void vsprintf(char* buf, const char *fmp, va_list args);
 
 #endif

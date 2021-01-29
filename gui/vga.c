@@ -1,13 +1,16 @@
-#include <drivers/vga.h>
+#include <gui/vga.h>
 #include <drivers/ports.h>
 #include <drivers/font16.h>
 #include <libc/mem.h>
 #include <libc/string.h>
+
+
 void set_palette(int start, int end, uint8_t* rgb);
 void put_pixel(int row, int col, uint8_t color);
 
 
 void init_palette() {
+    /* see links: https://en.wikipedia.org/wiki/Web_colors */
     static uint8_t table_rgb[16 * 3] = {
         0x00, 0x00, 0x00,       /* 0:黑 */
         0xff, 0x00, 0x00,       /* 1:亮红 */
@@ -17,14 +20,14 @@ void init_palette() {
         0xff, 0x00, 0xff,       /* 5:亮紫 */
         0x00, 0xff, 0xff,       /* 6:浅亮蓝 */
         0xff, 0xff, 0xff,       /* 7:白 */
-        0xd6, 0xd6, 0xd6,       /* 8:亮灰 */
+        0xd3, 0xd3, 0xd3,       /* 8:亮灰 */
         0x84, 0x00, 0x66,       /* 9:暗红 */
         0x00, 0x84, 0x00,       /* 10:暗绿 */
         0x84, 0x84, 0x00,       /* 11:暗黄 */
-        0x00, 0x00, 0x84,       /* 12:暗蓝 */
+        0x00, 0x00, 0x8b,       /* 12:暗蓝 */
         0x84, 0x00, 0x84,       /* 13:暗紫 */
-        0x00, 0x84, 0x84,       /* 14:浅暗蓝 */
-        0xa4, 0xa4, 0xa4        /* 15:暗灰 */
+        0x87, 0xce, 0xeb,       /* 14:浅暗蓝 */
+        0xa9, 0xa9, 0xa9        /* 15:暗灰 */
     };
     set_palette(0, 15, table_rgb);
 }
@@ -41,11 +44,11 @@ void set_palette(int start, int end, uint8_t* rgb) {
     }
 }
 
-void fill_rect(uint8_t* buf, int x0, int y0, int w, int h, uint8_t color) {
+void fill_rect(uint8_t* buf, int buf_w, int x0, int y0, int w, int h, uint8_t color) {
     int x, y;
     for (y = y0; y < y0 + h; y++) {
         for (x = x0; x < x0 + w; x++) {
-            buf[x + y * SCREEN_W] = color;
+            buf[x + y * buf_w] = color;
         }
     }
 }
@@ -56,27 +59,27 @@ void put_pixel(int x, int y, uint8_t color) {
 }
 
 
-void put_char(int x0, int y0, char c, uint8_t color) {
+void put_char(uint8_t* buf, int buf_w, int x0, int y0, char c, uint8_t color) {
     int i, j;
     for (i = 0; i < CHAR_H; i++) {
         uint8_t mask = 0x01;
         for (j = 0; j < CHAR_W; j++) {
             // this postion has pixel
             if ((asc1608[(uint8_t)c][i] & mask) != 0) {
-                put_pixel(x0+j, y0+i, color);
+                buf[(y0+i)*buf_w + (x0+j)] = color;
             }
             mask = mask << 1;
         }
     }
 }
 
-void put_string(int x0, int y0, char* str, uint8_t color) {
+void put_string(uint8_t* buf, int buf_w, int x0, int y0, char* str, uint8_t color) {
     int i = 0;
     int x = x0, y = y0;
     while (str[i] != '\0') {
-        put_char(x, y, str[i], color);
+        put_char(buf, buf_w, x, y, str[i], color);
         x += CHAR_W;
-        if (x >= SCREEN_W) {
+        if (x >= buf_w) {
             x = 0;
             y += CHAR_H;
         }
@@ -93,7 +96,12 @@ void printf(const char* fmt, ...) {
      */
     va_list args = (va_list)((char*)(&fmt) + 4);     // get the next parameter from stack, see c call conventions
     vsprintf(buf, fmt, args);
-    put_string(0, 0, buf, BLACK);
+    put_string((uint8_t*)VIDEO_13H_ADDRESS, SCREEN_W, 0, 0, buf, BLACK);
+}
+
+void sprintf(char* buf, const char* fmt, ...) {
+    va_list args = (va_list)((char*)(&fmt) + 4);
+    vsprintf(buf, fmt, args);
 }
 
 void vsprintf(char* buf, const char* fmt, va_list args) {

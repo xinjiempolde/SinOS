@@ -4,7 +4,7 @@
 #include <libc/string.h>
 #include <libc/mem.h>
 #include <drivers/ports.h>
-#include <drivers/vga.h>
+#include <gui/vga.h>
 #include <gui/layer.h>
 static int offset = 0;
 static char buffer[3];

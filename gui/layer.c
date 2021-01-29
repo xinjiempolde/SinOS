@@ -1,5 +1,5 @@
 #include <gui/layer.h>
-#include <drivers/vga.h>
+#include <gui/vga.h>
 LayerManager* init_layman(MemMan* memman) {
     int i;
     LayerManager* layman = (LayerManager*)mem_alloc_4k(memman, sizeof(LayerManager));
