@@ -18,6 +18,7 @@ typedef struct {
 typedef struct {
     int numOfLayer;
     uint8_t* vram;
+    uint8_t* map;  // record the pixel belongs to which layer
     Layer* layerIndexList[MAX_LAYER_NUM]; // record which layers exists asc by layer.z
     Layer layerList[MAX_LAYER_NUM];
 }LayerManager;
@@ -28,5 +29,6 @@ void add_layer(LayerManager* layman, Layer* layer);
 void set_layer_level(LayerManager* layman, Layer* layer, int z);
 void move_layer(LayerManager* layman, Layer* layer, int x, int y);
 void repaint_layers(LayerManager* layman);
-void repaint_partial_layers(LayerManager* layman, int x0, int y0, int x1, int y1);
+void repaint_partial_layers(LayerManager* layman, int x0, int y0, int x1, int y1, int begin_z);
+void refresh_partial_map(LayerManager* layman, int x0, int y0, int x1, int y1);
 #endif

@@ -42,12 +42,12 @@ void kernel_main() {
     unsigned int value = 0;
     while(1) {
         count++;
-        if (count % 10000000 == 0) {
+        if (count % 1000000 == 0) {
             value++;
             sprintf(s_buf, "%d", value);
-            fill_rect(window_buf, 160, 40, 24, 120, 16, BRIGHT_GRAY);
+            fill_rect(window_buf, 160, 40, 24, 100, 16, BRIGHT_GRAY);
             put_string(window_buf, 160, 40, 24, s_buf, BLACK);
-            repaint_partial_layers(layman, window_layer->x + 40, window_layer->y+24, window_layer->x + 159, window_layer->y + 40);
+            repaint_partial_layers(layman, window_layer->x + 40, window_layer->y+24, window_layer->x + 159, window_layer->y + 40, window_layer->z);
 
         }
     }
