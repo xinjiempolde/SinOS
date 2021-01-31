@@ -49,7 +49,7 @@ load_kernel_loop:
     cmp ax, 0xff8                               
     jb load_kernel_loop                          ; FAT entry < 0xff8:has next sector, FAT entry > 0xff8(always 0xfff): no next sector
 start_switch_gm:
-    call switch_vga_13                           ; switch video card to mode 13h
+    call switch_vbe_mode                         ; switch video card mode
 start_switch_pm:
     call switch_to_pm                            ; switch to 32bit protected mode
 

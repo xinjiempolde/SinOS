@@ -3,7 +3,7 @@
 #include <drivers/font16.h>
 #include <libc/mem.h>
 #include <libc/string.h>
-
+static BOOTINFO* bootInfo = (BOOTINFO*)BOOTINFO_ADDR; 
 
 void set_palette(int start, int end, uint8_t* rgb);
 void put_pixel(int row, int col, uint8_t color);
@@ -55,7 +55,7 @@ void fill_rect(uint8_t* buf, int buf_w, int x0, int y0, int w, int h, uint8_t co
 
 void put_pixel(int x, int y, uint8_t color) {
     char* vram = (char*)0xa0000;
-    vram[x + SCREEN_W * y] = color;
+    vram[x + bootInfo->screen_w * y] = color;
 }
 
 
@@ -96,7 +96,7 @@ void printf(const char* fmt, ...) {
      */
     va_list args = (va_list)((char*)(&fmt) + 4);     // get the next parameter from stack, see c call conventions
     vsprintf(buf, fmt, args);
-    put_string((uint8_t*)VIDEO_13H_ADDRESS, SCREEN_W, 0, 0, buf, BLACK);
+    put_string((uint8_t*)bootInfo->vram, bootInfo->screen_w, 0, 0, buf, BLACK);
 }
 
 void sprintf(char* buf, const char* fmt, ...) {

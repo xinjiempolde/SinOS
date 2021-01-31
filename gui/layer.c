@@ -1,11 +1,13 @@
 #include <gui/layer.h>
 #include <gui/vga.h>
+static BOOTINFO* bootInfo = (BOOTINFO*)BOOTINFO_ADDR; 
+
 LayerManager* init_layman(MemMan* memman) {
     int i;
     LayerManager* layman = (LayerManager*)mem_alloc_4k(memman, sizeof(LayerManager));
     layman->numOfLayer = 0;
-    layman->vram = (uint8_t*)VIDEO_13H_ADDRESS;
-    layman->map = (uint8_t*)mem_alloc_4k(memman, SCREEN_H * SCREEN_W);
+    layman->vram = (uint8_t*)bootInfo->vram;
+    layman->map = (uint8_t*)mem_alloc_4k(memman, bootInfo->screen_h * bootInfo->screen_w);
     for (i = 0; i < MAX_LAYER_NUM; i++) {
         layman->layerList[i].flag = LAYER_NO_USE;
     }
@@ -121,7 +123,7 @@ void repaint_layers(LayerManager* layman) {
         for (y = 0; y < layer->height; y++) {
             for (x = 0; x < layer->weight; x++) {
                 c = layer->buf[y*layer->weight+x];
-                index = (y+layer->y)*SCREEN_W + (x + layer->x);
+                index = (y+layer->y)*bootInfo->screen_w + (x + layer->x);
                 if (c != TRANSPARENT) {
                     layman->vram[index] = c;
                     layman->map[index] = lid;
@@ -141,8 +143,8 @@ void repaint_partial_layers(LayerManager* layman, int x0, int y0, int x1, int y1
     int i, x, y, vx, vy, lid, index;
     int x_begin, x_end, y_begin, y_end;
     uint8_t c;
-    if (x1 > SCREEN_W) x1 = SCREEN_W;
-    if (y1 > SCREEN_H) y1 = SCREEN_H; //part of the area is not visible
+    if (x1 > bootInfo->screen_w) x1 = bootInfo->screen_w;
+    if (y1 > bootInfo->screen_h) y1 = bootInfo->screen_h; //part of the area is not visible
 
     for (i = 0; i < layman->numOfLayer; i++) {
         Layer* layer = layman->layerIndexList[i];
@@ -165,7 +167,9 @@ void repaint_partial_layers(LayerManager* layman, int x0, int y0, int x1, int y1
             for (x = x_begin; x < x_end; x++) {
                 vx = x + layer->x;
                 c = layer->buf[y*layer->weight+x];
-                index = vy * SCREEN_W + vx;
+                index = vy * bootInfo->screen_w + vx;
+ 
+ 
                 /* only repaint top level layer */
                 if ((c != TRANSPARENT) && (layman->map[index] == lid)) {
                     layman->vram[index] = c;
@@ -180,8 +184,8 @@ void refresh_partial_map(LayerManager* layman, int x0, int y0, int x1, int y1) {
     int i, x, y, vx, vy, lid, index;
     int x_begin, x_end, y_begin, y_end;
     uint8_t c;
-    if (x1 > SCREEN_W) x1 = SCREEN_W;
-    if (y1 > SCREEN_H) y1 = SCREEN_H; //part of the area is not visible
+    if (x1 > bootInfo->screen_w) x1 = bootInfo->screen_w;
+    if (y1 > bootInfo->screen_h) y1 = bootInfo->screen_h; //part of the area is not visible
 
     for (i = 0; i < layman->numOfLayer; i++) {
         Layer* layer = layman->layerIndexList[i];
@@ -202,7 +206,7 @@ void refresh_partial_map(LayerManager* layman, int x0, int y0, int x1, int y1) {
             for (x = x_begin; x < x_end; x++) {
                 vx = x + layer->x;
                 c = layer->buf[y*layer->weight+x];
-                index = vy * SCREEN_W + vx;
+                index = vy * bootInfo->screen_w + vx;
                 /* only repaint top level layer */
                 if (c != TRANSPARENT) {
                     layman->map[index] = lid;

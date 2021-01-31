@@ -2,9 +2,12 @@
 #define VGA_H
 
 #include <cpu/type.h>
-#define VIDEO_13H_ADDRESS 0xa0000
-#define SCREEN_W 320
-#define SCREEN_H 200
+
+#define BOOTINFO_ADDR 0xff00
+#define BOOT_BY_VGA 0x00
+#define BOOT_BY_VBE 0x01
+#define NO_RESET_PALETTE 0x00
+#define RESET_PALETTE    0x01
 
 #define CHAR_W 8
 #define CHAR_H 16
@@ -29,11 +32,18 @@
 #define DARK_PURPLE 13
 #define LIGHT_DARK_BLUE 14
 #define DARK_GRAY 15
-
 #define TRANSPARENT 99
 
 #define SLIDE_BAR_H 28
 
+/* boot infomation, get from assembly */
+typedef struct {
+    short screen_w;
+    short screen_h;
+    uint8_t* vram;
+    char VGA_OR_VBE;
+    char reset_palette;
+}BOOTINFO;
 
 void init_palette();
 

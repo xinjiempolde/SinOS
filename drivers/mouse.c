@@ -15,11 +15,11 @@ typedef struct {
 } mouse_info;
 
 static mouse_info m_info;
+static BOOTINFO* bootInfo = (BOOTINFO*)BOOTINFO_ADDR;
 
 /* definition in kernel.c */
 extern LayerManager* layman;
 extern Layer* mouse_layer;
-
 int write_ready() {
     if ((port_byte_in(MOUSE_STATE_PORT) & 0x02) == 0) {
         return 1;
@@ -81,9 +81,9 @@ static void mouse_callback(registers_t r) {
         m_info.x += buffer[1];
         m_info.y -= buffer[2];
         if (m_info.x < 0) m_info.x = 0;
-        if (m_info.x >= SCREEN_W-1) m_info.x = SCREEN_W-1;
+        if (m_info.x >= bootInfo->screen_w-1) m_info.x = bootInfo->screen_w-1;
         if (m_info.y < 0) m_info.y = 0;
-        if (m_info.y >= SCREEN_H-1) m_info.y = SCREEN_H-1;
+        if (m_info.y >= bootInfo->screen_h-1) m_info.y = bootInfo->screen_h-1;
         move_layer(layman, mouse_layer, m_info.x, m_info.y);
         
     }
