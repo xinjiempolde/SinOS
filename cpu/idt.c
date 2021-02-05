@@ -1,6 +1,6 @@
 #include <cpu/idt.h>
+// idt_gate_t* idt = (idt_gate_t*)IDT_ADR;
 idt_gate_t idt[IDT_ENTRIES];
-idt_register_t idt_reg;
 /**
  * you can see the details below:
  * https://wiki.osdev.org/Interrupt_Descriptor_Table
@@ -14,8 +14,9 @@ void set_idt_gate(int n, uint32_t isr_addr) {
 }
 
 void set_idt() {
+    idt_register_t idt_reg;
     idt_reg.Limit = IDT_ENTRIES * sizeof(idt_gate_t) - 1;
-    idt_reg.Base = (uint32_t)&idt;
+    idt_reg.Base = (uint32_t)idt;
     // volatile: Declare to GCC that optimization of the inline assembly is not allowed
     /**
      * lidt [idt_address] = mov ebx, idt_address; lidt [ebx];

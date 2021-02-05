@@ -21,7 +21,7 @@ typedef struct {
 
 } __attribute__((packed)) idt_register_t;
 
-
+#define IDT_ADR 0x110000
 #define IDT_ENTRIES 256
 
 void set_idt_gate(int n, uint32_t isr_addr);

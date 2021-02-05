@@ -18,7 +18,6 @@ gdt_data:
     db 10010010b
     db 11001111b
     db 0x0    ;Base Address 31:24
-
 gtd_end:
 
 gdt_descriptor:

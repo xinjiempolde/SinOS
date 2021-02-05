@@ -4,7 +4,7 @@
 #include <cpu/type.h>
 
 #define FREE_MEM_ITEM_CNT 4000
-#define MEM_MAN_ADDR      0x100000
+#define MEM_MAN_ADDR      0x120000
 
 /* Item for each free memory area */
 typedef struct {

@@ -20,6 +20,7 @@ static BOOTINFO* bootInfo = (BOOTINFO*)BOOTINFO_ADDR;
 /* definition in kernel.c */
 extern LayerManager* layman;
 extern Layer* mouse_layer;
+extern Layer* window_layer;
 int write_ready() {
     if ((port_byte_in(MOUSE_STATE_PORT) & 0x02) == 0) {
         return 1;
@@ -68,7 +69,7 @@ static void mouse_callback(registers_t r) {
     while (!read_ready());
     buffer[offset] = port_byte_in(MOUSE_DATA_PORT);
     offset = (offset + 1) % 3;
-
+    /* data reception completed */
     if (offset == 0) {
         //fill_rect(m_info.x, m_info.y, 16, 16, LIGHT_BRIGHT_BLUE);
 
@@ -80,12 +81,15 @@ static void mouse_callback(registers_t r) {
 
         m_info.x += buffer[1];
         m_info.y -= buffer[2];
+        /* why -1 instead of -16? hide the mouse cursor in right */
         if (m_info.x < 0) m_info.x = 0;
         if (m_info.x >= bootInfo->screen_w-1) m_info.x = bootInfo->screen_w-1;
         if (m_info.y < 0) m_info.y = 0;
         if (m_info.y >= bootInfo->screen_h-1) m_info.y = bootInfo->screen_h-1;
         move_layer(layman, mouse_layer, m_info.x, m_info.y);
-        
+        if (buffer[0] & LEFT_BTN_ON) {
+            move_layer(layman, window_layer, m_info.x, m_info.y);
+        }
     }
     UNUSED(r);
 }

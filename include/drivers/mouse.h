@@ -10,6 +10,9 @@
 #define MOUSE_ENABLE 0xf4
 #define MOUSE_SENDTO 0xd4
 
+#define LEFT_BTN_ON 0x01
+#define RIGHT_BTN_ON 0x02
+#define MIDDLE_BTN_ON 0x04
 void init_mouse();
 void init_mouse_cursor(uint8_t* mouse_cursor_buff);
 void put_cursor(int x0, int y0);
