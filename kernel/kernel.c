@@ -8,11 +8,11 @@
 #include <gui/window.h>
 #include <cpu/gdt.h>
 #include <kernel/task.h>
+#include <cpu/timer.h>
 MemMan* memman = (MemMan*)MEM_MAN_ADDR;
 LayerManager* layman;
 Layer* mouse_layer;
 Layer* window_layer;
-extern unsigned int timer_count;
 void kernel_main() {
     gdt_install();
 
@@ -20,11 +20,13 @@ void kernel_main() {
     if (bootInfo->reset_palette == RESET_PALETTE) {
         init_palette();
     }
-    install_isr();
-    install_irq();
+
+    /* initialize memory manager which is preceded by install_irq */
     mem_init(memman);
     mem_free(memman, 0x200000, 0x8000000); // 2MB~128MB
     
+    install_isr();
+    install_irq();
     uint8_t* mouse_buf = (uint8_t*)mem_alloc_4k(memman, 1024);
     // uint8_t* back_buf = (uint8_t*)mem_alloc_4k(memman, bootInfo->screen_h*bootInfo->screen_w*0x10); // should modify this
     uint8_t* back_buf = (uint8_t*)mem_alloc_4k(memman, 0x1000000); // should modify this
@@ -47,14 +49,22 @@ void kernel_main() {
     repaint_layers(layman);
 
     char* s_buf = (char*)mem_alloc_4k(memman, 64);
+    timer_t* sec3Timer = set_timer(300);
+    unsigned int count = 0;
     while(1) {
-        if (timer_count / 100 == 3) {
+        count++;
+        if (sec3Timer->useFlags == TIMER_IN_USE &&sec3Timer->timeoutFlags == TIME_OUT) {
+            // sec3Timer->timeoutFlags = TIME_NO_OUT;
             task_switch();
+            restart_timer(sec3Timer);
         }
-        sprintf(s_buf, "%d", timer_count/100);
-        fill_rect(window_buf, 160, 40, 24, 100, 16, BRIGHT_GRAY);
-        put_string(window_buf, 160, 40, 24, s_buf, BLACK);
-        repaint_partial_layers(layman, window_layer->x + 40, window_layer->y+24, window_layer->x + 159, window_layer->y + 40, window_layer->z);
-        
+        fill_rect(window_buf, 160, 20, 20, 120, 16, BRIGHT_GRAY);
+        sprintf(s_buf, "%d", count);
+        put_string(window_buf, 160, 20, 20, s_buf, BLACK);
+        refresh_partial_map(layman, window_layer->x+20, 
+                window_layer->y+20, window_layer->x+20+120, window_layer->y+20+16);
+        repaint_partial_layers(layman, window_layer->x+20, 
+                window_layer->y+20, window_layer->x+20+120, window_layer->y+20+16, window_layer->z);
+
     }
 }
