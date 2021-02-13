@@ -49,11 +49,11 @@ void kernel_main() {
     repaint_layers(layman);
 
     char* s_buf = (char*)mem_alloc_4k(memman, 64);
-    timer_t* sec3Timer = set_timer(300);
+    timer_t* sec3Timer = set_timer(3);
     unsigned int count = 0;
     while(1) {
         count++;
-        if (sec3Timer->useFlags == TIMER_IN_USE &&sec3Timer->timeoutFlags == TIME_OUT) {
+        if (sec3Timer->useFlags == TIMER_IN_USE && sec3Timer->timeoutFlags == TIME_OUT) {
             // sec3Timer->timeoutFlags = TIME_NO_OUT;
             task_switch();
             restart_timer(sec3Timer);

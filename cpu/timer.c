@@ -10,31 +10,29 @@
  */
 
 static TIMER_MAN* timerMan;
-
+void tune_timer(timer_t* timer);
 /* handle IRQ0 */
 static void timer_callback(registers_t r) {
+    timer_t* p;
     timerMan->sysTimeCount++;
 
     UNUSED(r);
     
-    unsigned int i, j;
-    if (timerMan->sysTimeCount < timerMan->nextTimeOut) {
+    /* there is no timer timing out */
+    if (timerMan->sysTimeCount < timerMan->next->systimePlusCount) {
         return;
     }
 
-    /* delete the timer which is time out */
-    for (i = timerMan->nextTimeOutIndex; i < timerMan->timerNum; i++) {
-        if (timerMan->sysTimeCount < timerMan->timerIndexArray[i]->systimePlusCount) {
+    p = timerMan->next;
+    while (p != NULL) {
+        if (timerMan->sysTimeCount < p->systimePlusCount) {
             break;
         }
-        timerMan->timerIndexArray[i]->timeoutFlags = TIME_OUT;
+        p->timeoutFlags = TIME_OUT;
+        p = p->nextNode;
     }
-    timerMan->nextTimeOutIndex = i;
-    // timerMan->timerNum -= i;
-    // for (j = 0; (j < i) && (j+i < MAX_TIMER_COUNT); j++) {
-        // timerMan->timerIndexArray[j] = timerMan->timerIndexArray[j+i];
-    // }
-
+    timerMan->next = p;
+    
 }
 
 void init_timer() {
@@ -64,7 +62,7 @@ void init_timer() {
     timerMan = (TIMER_MAN*)mem_alloc_4k(memMan, sizeof(TIMER_MAN));
     timerMan->sysTimeCount = 0;
     timerMan->timerNum = 0;
-    timerMan->nextTimeOutIndex = 0;
+    timerMan->next  = NULL;
     for (i = 0; i < MAX_TIMER_COUNT; i++) {
         timerMan->timerArray[i].useFlags = TIMER_NO_USE;
     }
@@ -72,46 +70,76 @@ void init_timer() {
 
 timer_t* set_timer(unsigned int timeout) {
     timer_t* alloc_timer;
-    int i, j, index;
-
+    timer_t* p;
+    int i;
     /* interrupt diable */
     asm volatile ("cli");
     for (i = 0; i < MAX_TIMER_COUNT; i++) {
-        if (timerMan->timerArray[i].useFlags == TIMER_NO_USE){
+        if (timerMan->timerArray[i].useFlags == TIMER_NO_USE) {
             alloc_timer = &(timerMan->timerArray[i]);
-            break;
         }
     }
 
-    /* insert into the correct position order by asc */
     alloc_timer->count = timeout;
     alloc_timer->systimePlusCount = timeout + timerMan->sysTimeCount;
-    for (i = 0; i < timerMan->timerNum; i++) {
-        if (alloc_timer->systimePlusCount < timerMan->timerIndexArray[i]->systimePlusCount) {
-            break;
-        }
-    }
-    /* move one by one */
-    for (j = timerMan->timerNum; j > i; j--) {
-        timerMan->timerIndexArray[j] = timerMan->timerIndexArray[j-1];
-    }
-    timerMan->timerIndexArray[i] = alloc_timer;
-    timerMan->timerNum++;
     alloc_timer->useFlags = TIMER_IN_USE;
-
-    index = timerMan->nextTimeOutIndex;
-    timerMan->nextTimeOut = timerMan->timerIndexArray[index]->systimePlusCount;
-
+    alloc_timer->timeoutFlags = TIME_NO_OUT;
+    
+    /* sort timer */
+    tune_timer(alloc_timer);
+    
     /* interrupt enable */
     asm volatile ("sti");
     return alloc_timer;
 }
 
 void restart_timer(timer_t* timer) {
+    timer_t* p;
     asm volatile ("cli");
 
     timer->systimePlusCount = timerMan->sysTimeCount + timer->count;
     timer->timeoutFlags = TIME_NO_OUT;
+    tune_timer(timer);
 
     asm volatile ("sti");
+}
+
+/**
+ * move the timer to the correct position, which makes it order by asc.
+ */
+void tune_timer(timer_t* timer) {
+    timer_t* p;
+
+    /* there is no timer being set. */
+    if (timerMan->next == NULL) {
+        timerMan->next = timer;
+        timer->nextNode = NULL;
+        timer->preNode = NULL;
+        return timer;
+    }
+
+    p = timerMan->next;
+    if (timer->systimePlusCount < p->systimePlusCount) {
+        timerMan->next = timer;
+        if (p->preNode != NULL) {
+            p->preNode->nextNode = timer;
+        }
+        timer->preNode = p->preNode;
+        timer->nextNode = p;
+        p->preNode = timer;
+    } else {
+        while (p->nextNode != NULL && 
+            timer->systimePlusCount > p->nextNode->systimePlusCount) {
+            
+            p = p->nextNode;
+        }
+
+        if (p->nextNode != NULL) {
+            p->nextNode->preNode = timer;
+        }
+        timer->nextNode = p->nextNode;
+        p->nextNode = timer;
+        timer->preNode = p;
+    }
+
 }

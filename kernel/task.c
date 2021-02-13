@@ -8,17 +8,26 @@
 TSS tss_curr;
 TSS tss_test;
 extern LayerManager* layman;
+static unsigned int count = 0;
+static MemMan* memMan;
+static uint8_t* tt_window_buf;
+static Layer* tt_window_layer;
+static timer_t* sec3timer;
+static int times = 0;
 void task_test() {
-    MemMan* memMan = (MemMan*)MEM_MAN_ADDR;
-    uint8_t* tt_window_buf = (uint8_t*)mem_alloc_4k(memMan, 0x10000);
-    init_window_buf(tt_window_buf, 160, 68, "task_test");
-    Layer* tt_window_layer = alloc_layer(layman, tt_window_buf, 68, 160, 8);
-    add_layer(layman, tt_window_layer);
-    move_layer(layman, tt_window_layer, 100, 100);
+    if (count == 0) {
+        memMan = (MemMan*)MEM_MAN_ADDR;
+        tt_window_buf = (uint8_t*)mem_alloc_4k(memMan, 0x10000);
+        tt_window_layer = alloc_layer(layman, tt_window_buf, 68, 160, 8);
+        init_window_buf(tt_window_buf, 160, 68, "task_test");
+        add_layer(layman, tt_window_layer);
+        move_layer(layman, tt_window_layer, 100, 100);
+        sec3timer = set_timer(2);
 
-    timer_t* sec3timer = set_timer(300);
+    } else {
+
+    }
     char* s_buf = (char*)mem_alloc_4k(memMan, 64);
-    unsigned int count = 0;
     while (1) {
         count++;
         if (sec3timer->timeoutFlags == TIME_OUT) {
@@ -34,9 +43,12 @@ void task_test() {
                 tt_window_layer->y+20, tt_window_layer->x+20+120, tt_window_layer->y+20+16, tt_window_layer->z);
 
     }
+    
 }
 
 void task_switch() {
+    if (times == 0) {
+        times++;
     /* current task status segment, it's necessary for switching task */
     tss_curr.LDTR = 0;
     tss_curr.IOPB = sizeof(TSS) << 16;
@@ -64,5 +76,8 @@ void task_switch() {
                 :
                 :
                 : "%ax" );
+   } else {
+       asm volatile ("ljmp $0x20, $0x00");
+   }
 
 }

@@ -7,10 +7,17 @@
 
 #define TIME_OUT 0x01
 #define TIME_NO_OUT 0x00
+
+#ifndef NULL
+#define NULL 0
+#endif
+
 /* single timer structure */
-typedef struct {
+typedef struct timer_t{
     unsigned int count;  // set by set_timer
     unsigned int systimePlusCount; // systime at the point of setting time add count;
+    struct timer_t *nextNode;    // double   linked   lists
+    struct timer_t *preNode;
     char useFlags;          // use or not
     char timeoutFlags;      // is time out?
 }timer_t;
@@ -19,9 +26,7 @@ typedef struct {
 typedef struct {
     unsigned int sysTimeCount; // total time count from the beginning
     unsigned int timerNum;     // the number of timer
-    unsigned int nextTimeOut;  // the latest timer which will time out
-    int nextTimeOutIndex;
-    timer_t* timerIndexArray[MAX_TIMER_COUNT];
+    timer_t* next;             // the latest timer which will time out
     timer_t timerArray[MAX_TIMER_COUNT];
 }TIMER_MAN;
 
