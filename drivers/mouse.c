@@ -86,9 +86,9 @@ static void mouse_callback(registers_t r) {
         if (m_info.x >= bootInfo->screen_w-1) m_info.x = bootInfo->screen_w-1;
         if (m_info.y < 0) m_info.y = 0;
         if (m_info.y >= bootInfo->screen_h-1) m_info.y = bootInfo->screen_h-1;
-        move_layer(layman, mouse_layer, m_info.x, m_info.y);
+        move_layer(mouse_layer, m_info.x, m_info.y);
         if (buffer[0] & LEFT_BTN_ON) {
-            move_layer(layman, window_layer, m_info.x, m_info.y);
+            move_layer(window_layer, m_info.x, m_info.y);
         }
     }
     UNUSED(r);

@@ -55,6 +55,21 @@ int strlen(char* s) {
     return i;
 }
 
+void strclear(char str[]) {
+    str[0] = '\0';
+}
+
+int strcmp(char* s1, char* s2) {
+    int s1Len = strlen(s1);
+    int s2Len = strlen(s2);
+    int i;
+    if (s1Len != s2Len) return 1;
+    for (i = 0; i < s1Len; i++) {
+        if (s1[i] != s2[i]) return 1;
+    }
+    return 0;
+}
+
 void reverse(char* s) {
     int begin = 0, end = strlen(s) - 1;
     char c;

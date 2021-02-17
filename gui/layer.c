@@ -1,5 +1,6 @@
 #include <gui/layer.h>
 #include <gui/vga.h>
+#include <libc/string.h>
 static BOOTINFO* bootInfo = (BOOTINFO*)BOOTINFO_ADDR; 
 
 LayerManager* init_layman(MemMan* memman) {
@@ -31,6 +32,7 @@ Layer* alloc_layer(LayerManager* layman, uint8_t* buf, int h, int w, int z) {
         emptyLayer->y = 0;
         emptyLayer->z = z>MAX_LAYER_NUM?MAX_LAYER_NUM:z;
         emptyLayer->flag = LAYER_IN_USE;
+        emptyLayer->layman = layman;
     }
     return emptyLayer;
     
@@ -58,10 +60,11 @@ void add_layer(LayerManager* layman, Layer* layer) {
     repaint_layers(layman);
 }
 
-void set_layer_level(LayerManager* layman, Layer* layer, int z) {
+void set_layer_level(Layer* layer, int z) {
     int i;
     int begin, end;
     int old_z = layer->z;
+    LayerManager* layman = layer->layman;
     z = z>MAX_LAYER_NUM?MAX_LAYER_NUM:z;
     /* increase the level of layer */
     if (z > old_z) {
@@ -97,7 +100,9 @@ void set_layer_level(LayerManager* layman, Layer* layer, int z) {
 /**
  * move layer to (x, y), (x, y) is upper-left coordinate
  */
-void move_layer(LayerManager* layman, Layer* layer, int x, int y) {
+void move_layer(Layer* layer, int x, int y) {
+    LayerManager* layman = layer->layman;
+
     int old_x = layer->x;
     int old_y = layer->y;
     layer->x = x;
@@ -132,8 +137,8 @@ void repaint_layers(LayerManager* layman) {
     }
 }
 
-void repaint_single_layer(LayerManager* layman, Layer* l, int x0, int y0, int w, int h) {
-    repaint_partial_layers(layman, l->x + x0, l->y + y0, 
+void repaint_single_layer(Layer* l, int x0, int y0, int w, int h) {
+    repaint_partial_layers(l->layman, l->x + x0, l->y + y0, 
                     l->x + x0 + w, l->y + y0 + h, l->z);
 }
 
@@ -219,4 +224,19 @@ void refresh_partial_map(LayerManager* layman, int x0, int y0, int x1, int y1) {
             }
         }
     }
+}
+
+void put_str_refresh(Layer* layer, int x0, int y0, char* str, int color) {
+    put_string(layer->buf, layer->weight, x0, y0, str, color);
+    repaint_single_layer(layer, x0, y0, strlen(str)*CHAR_W, CHAR_H);
+}
+
+void put_char_refresh(Layer* layer, int x0, int y0, char c, int color) {
+    put_char(layer->buf, layer->weight, x0, y0, c, color);
+    repaint_single_layer(layer, x0, y0, CHAR_W, CHAR_H);
+}
+
+void put_rect_refresh(Layer* layer, int x0, int y0, int weight, int height, int color) {
+    fill_rect(layer->buf, layer->weight, x0, y0, weight, height, color);
+    repaint_single_layer(layer, x0, y0, weight, height);
 }

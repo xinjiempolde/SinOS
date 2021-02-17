@@ -7,6 +7,7 @@
 #include <gui/console.h>
 #include <cpu/timer.h>
 #include <drivers/keyboard.h>
+#include <libc/string.h>
 TSS tss_curr;
 TSS tss_test;
 extern LayerManager* layman;
@@ -20,34 +21,60 @@ void console_task() {
     timer_t* cursorTimer = set_timer(50);
     int cursorColor = WHITE;
     int cursorX = 12, cursorY = 24;
+
+    char cmd[256] = {'\0'}; // command
+    char s[32];
     uint8_t* console_buf = mem_alloc_4k(memMan, DFT_CSL_H*DFT_CSL_W);
     init_console_buf(console_buf, DFT_CSL_W, DFT_CSL_H);
     Layer* console_layer = alloc_layer(layman, console_buf, DFT_CSL_H, DFT_CSL_W, 6);
     add_layer(layman, console_layer);
-    move_layer(layman, console_layer, 100, 100);
+    move_layer(console_layer, 100, 100);
     while (1) {
+        /* keyboard buff is not null */
         if (key_buff[kb_idx] != '\0') {
             if (key_buff[kb_idx] == KEY_BACKSPACE) {
-                if (cursorX >= 4 + CHAR_W) { // can backspace
-                    cursorX -= 8;
-                    fill_rect(console_buf, DFT_CSL_W, cursorX, cursorY, 2*CHAR_W, CHAR_H, BLACK);
-                    repaint_single_layer(layman, console_layer, cursorX, cursorY, 2*CHAR_W, CHAR_H);
+                if (cursorX >= 12 + CHAR_W) { // can backspace
+                    cursorX -= CHAR_W;
+                    backspace(cmd);
+                    put_rect_refresh(console_layer, cursorX, cursorY, 2*CHAR_W, CHAR_H, BLACK);
                 }
             } else if (key_buff[kb_idx] == KEY_ENTER) {
-                fill_rect(console_buf, DFT_CSL_W, cursorX, cursorY, CHAR_W, CHAR_H, BLACK); // cover the char of the end of line
-                repaint_single_layer(layman, console_layer, cursorX, cursorY, CHAR_W, CHAR_H);
-                put_char(console_buf, DFT_CSL_W, 4, cursorY+CHAR_H, '#', BRIGHT_GREEN);
-                repaint_single_layer(layman, console_layer, 4, cursorY+CHAR_H, CHAR_W, CHAR_H);
-                cursorX = 12;
-                cursorY += CHAR_H;
-            } else {        
+                put_rect_refresh(console_layer, cursorX, cursorY, CHAR_W, CHAR_H, BLACK);
+                cursorX = DFT_CSL_BOR;
+                cursorY = console_newline(console_layer, cursorY);
+                /* memory command */
+                if (strcmp(cmd, "mem") == 0) {
+                    sprintf(s, "total:    %dMB", mem_check(0x200000, 0x8000000) / (1024*1024));
+                    put_str_refresh(console_layer, cursorX, cursorY, s, WHITE);
+                    cursorY = console_newline(console_layer, cursorY);
+                    sprintf(s, "free:     %dMB", mem_total(memMan) / (1024*1024));
+                    put_str_refresh(console_layer, cursorX, cursorY, s, WHITE);
+                    cursorY = console_newline(console_layer, cursorY);
+                /* command not found */
+                } else if (strcmp(cmd, "clear") == 0) {
+                    console_clear(console_layer);
+                    cursorX = DFT_CSL_BOR;
+                    cursorY = DFT_CSL_TIT_H;
+                } else {
+                    put_str_refresh(console_layer, cursorX, cursorY, "command not found", WHITE);
+                    cursorY = console_newline(console_layer, cursorY);
+                }
+                put_char_refresh(console_layer, DFT_CSL_BOR, cursorY, '#', BRIGHT_GREEN);                    
+                cursorX = DFT_CSL_BOR + CHAR_W;
+                strclear(cmd);
+                strclear(key_buff);
+                kb_idx = -1; // why not 0? kb_idx++ will add 1, so don't worry
+
+            } else {
+                append(cmd, key_buff[kb_idx]);        
                 fill_rect(console_buf, DFT_CSL_W, cursorX, cursorY, CHAR_W, CHAR_H, BLACK);
                 put_char(console_buf, DFT_CSL_W, cursorX, cursorY, key_buff[kb_idx], WHITE);
-                repaint_single_layer(layman, console_layer, cursorX, cursorY, CHAR_W, CHAR_H);
+                repaint_single_layer(console_layer, cursorX, cursorY, CHAR_W, CHAR_H);
                 cursorX += CHAR_W;
             }
             kb_idx++;
         }
+        /* cursor blinks */
         if (cursorTimer->timeoutFlags == TIME_OUT) {
             if (cursorColor == WHITE) {
                 cursorColor = BLACK;
@@ -57,7 +84,7 @@ void console_task() {
             restart_timer(cursorTimer);
         }
         fill_rect(console_buf, DFT_CSL_W, cursorX, cursorY, 8, 16, cursorColor);
-        repaint_single_layer(layman, console_layer, cursorX, cursorY, CHAR_W, CHAR_H);
+        repaint_single_layer(console_layer, cursorX, cursorY, CHAR_W, CHAR_H);
     }
 }
 Task* task_init() {

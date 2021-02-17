@@ -43,7 +43,7 @@ void kernel_main() {
     add_layer(layman, mouse_layer);
     add_layer(layman, back_layer);
     add_layer(layman, window_layer);
-    move_layer(layman, window_layer, 50, 50);
+    move_layer(window_layer, 50, 50);
 
     /* just vmware's bug, add this line to avoid */
     fill_rect((uint8_t*)bootInfo->vram, 0, 0, 0, 0, 0, BLACK);

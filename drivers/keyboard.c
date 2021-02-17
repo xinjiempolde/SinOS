@@ -37,6 +37,7 @@ static char* scan_table[] = {  "ESC", "1", "2", "3", "4",
                                 "F8", "F9", "F10", "F11", "F12"};
 char key_buff[256] = {'\0'};
 static bool isShfit = FALSE;
+static bool isCapsLock = FALSE;
 
 static void keyboard_callback(registers_t r) {
     // read scan code
@@ -54,9 +55,12 @@ static void keyboard_callback(registers_t r) {
     /* shift up */
     } else if (scan_code == 0xaa || scan_code == 0xb6) {
         isShfit = FALSE;
+    /* CapsLock down */
+    } else if (scan_code == KEY_CAPSLOCK) {
+        isCapsLock ^= 0x1;
     } else if (scan_code < KEY_MAX){
         char *str;
-        if (isShfit) {
+        if (isShfit ^ isCapsLock) {
             str = shirt_table[scan_code - 1];
         } else {
             str = scan_table[scan_code - 1];
