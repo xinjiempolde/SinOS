@@ -6,6 +6,7 @@
 #include <gui/layer.h>
 #include <gui/background.h>
 #include <gui/window.h>
+#include <gui/console.h>
 #include <cpu/gdt.h>
 #include <kernel/task.h>
 #include <cpu/timer.h>
@@ -36,7 +37,7 @@ void kernel_main() {
     init_window_buf(window_buf, 160, 68, "window");
     
     layman = init_layman(memman);
-    mouse_layer = alloc_layer(layman, mouse_buf, 16, 16, 2);
+    mouse_layer = alloc_layer(layman, mouse_buf, 16, 16, 100);
     Layer* back_layer = alloc_layer(layman, back_buf, bootInfo->screen_h, bootInfo->screen_w, 0);
     window_layer = alloc_layer(layman, window_buf, 68, 160, 1);
     add_layer(layman, mouse_layer);
@@ -49,22 +50,28 @@ void kernel_main() {
     repaint_layers(layman);
 
     char* s_buf = (char*)mem_alloc_4k(memman, 64);
-    timer_t* sec3Timer = set_timer(3);
+    timer_t* sec3Timer = set_timer(2);
     unsigned int count = 0;
+
+    task_init();
+    Task* mytask = task_alloc();
+    mytask->tss.EIP = (uint32_t)&console_task;
+    mytask->tss.ESP = mem_alloc_4k(memman, sizeof(0x100));
     while(1) {
         count++;
-        if (sec3Timer->useFlags == TIMER_IN_USE && sec3Timer->timeoutFlags == TIME_OUT) {
-            // sec3Timer->timeoutFlags = TIME_NO_OUT;
+        if (sec3Timer->timeoutFlags == TIME_OUT) {
             task_switch();
             restart_timer(sec3Timer);
         }
-        fill_rect(window_buf, 160, 20, 20, 120, 16, BRIGHT_GRAY);
-        sprintf(s_buf, "%d", count);
-        put_string(window_buf, 160, 20, 20, s_buf, BLACK);
-        refresh_partial_map(layman, window_layer->x+20, 
+        if (count % 100 == 0) {
+            fill_rect(window_buf, 160, 20, 20, 120, 16, BRIGHT_GRAY);
+            sprintf(s_buf, "%d", count);
+            put_string(window_buf, 160, 20, 20, s_buf, BLACK);
+            refresh_partial_map(layman, window_layer->x+20, 
                 window_layer->y+20, window_layer->x+20+120, window_layer->y+20+16);
-        repaint_partial_layers(layman, window_layer->x+20, 
+            repaint_partial_layers(layman, window_layer->x+20, 
                 window_layer->y+20, window_layer->x+20+120, window_layer->y+20+16, window_layer->z);
 
+        }
     }
 }

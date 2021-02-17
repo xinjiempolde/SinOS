@@ -3,6 +3,7 @@
 #include <drivers/ports.h>
 #include <cpu/timer.h>
 #include <mm/memory.h>
+#include <kernel/task.h>
 /** 
  * from what I understand, an ISR should always be there, 
  * so it's better to set handler static, just better. it
@@ -28,6 +29,10 @@ static void timer_callback(registers_t r) {
         if (timerMan->sysTimeCount < p->systimePlusCount) {
             break;
         }
+        // if (p->count == 2) {
+        //     task_switch();
+        //     restart_timer()
+        // }
         p->timeoutFlags = TIME_OUT;
         p = p->nextNode;
     }

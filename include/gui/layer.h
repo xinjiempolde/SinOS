@@ -30,5 +30,6 @@ void set_layer_level(LayerManager* layman, Layer* layer, int z);
 void move_layer(LayerManager* layman, Layer* layer, int x, int y);
 void repaint_layers(LayerManager* layman);
 void repaint_partial_layers(LayerManager* layman, int x0, int y0, int x1, int y1, int begin_z);
+void repaint_single_layer(LayerManager* layman, Layer* layer, int x0, int y0, int w, int h);
 void refresh_partial_map(LayerManager* layman, int x0, int y0, int x1, int y1);
 #endif

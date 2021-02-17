@@ -8,7 +8,7 @@ CC          = i386-elf-gcc
 LD          = i386-elf-ld
 CFLAGS      = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32 -nostdinc -I include
 C_SOURCES   = ${wildcard cpu/*c drivers/*.c kernel/*.c libc/*.c mm/*.c gui/*.c}
-OBJ         = ${C_SOURCES:.c=.o cpu/interrupts.o mm/cache.o}
+OBJ         = ${C_SOURCES:.c=.o cpu/interrupts.o mm/cache.o kernel/asm_func.o}
 
 $(IMG_FILE): bootsect.bin $(LOADER) $(KERNEL)
 	dd if=/dev/zero of=$@ bs=512 count=2880

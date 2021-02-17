@@ -3,7 +3,6 @@
 
 #include <cpu/type.h>
 
-#define EFLAGS_AC_BIT 0x00040000
 
 #define CRO_CD_BIT 0x40000000
 #define CR0_NW_BIT 0x20000000

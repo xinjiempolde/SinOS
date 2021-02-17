@@ -13,7 +13,7 @@ void gdt_set_gate(int idx, uint32_t base, uint32_t limit, uint8_t access, uint8_
 void gdt_install(void) {
     gdt_ptr gp;
     gp.base = GDT_ADR;
-    gp.limit = sizeof(gdt_entry) * 5 - 1;
+    gp.limit = sizeof(gdt_entry) * 8000 - 1;
 
     /* NULL descriptor */
     gdt_set_gate(0, 0, 0, 0, 0);

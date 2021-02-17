@@ -102,11 +102,10 @@ void move_layer(LayerManager* layman, Layer* layer, int x, int y) {
     int old_y = layer->y;
     layer->x = x;
     layer->y = y;
-    refresh_partial_map(layman, old_x, old_y, old_x + layer->weight, old_y + layer->height);
-    refresh_partial_map(layman, x, y, x + layer->weight, y + layer->height);
-
+    
     /* for the old position, repaint from the bottom */
     repaint_partial_layers(layman, old_x, old_y, old_x + layer->weight, old_y + layer->height, 0);
+    
     /* for the current position, repaint from the current layer */
     repaint_partial_layers(layman, x, y, x + layer->weight, y + layer->height, layer->z);
 }
@@ -133,12 +132,18 @@ void repaint_layers(LayerManager* layman) {
     }
 }
 
+void repaint_single_layer(LayerManager* layman, Layer* l, int x0, int y0, int w, int h) {
+    repaint_partial_layers(layman, l->x + x0, l->y + y0, 
+                    l->x + x0 + w, l->y + y0 + h, l->z);
+}
 
 /**
  * repaint partial layer
  * (x0, y0) is upper-left coordinate, (x1, y1) is the lower-right coordinate
  */
 void repaint_partial_layers(LayerManager* layman, int x0, int y0, int x1, int y1, int begin_z) {
+    refresh_partial_map(layman, x0, y0, x1, y1);
+
     /* x, y is offset in buf, vx, vy if offset in video ram */
     int i, x, y, vx, vy, lid, index;
     int x_begin, x_end, y_begin, y_end;
