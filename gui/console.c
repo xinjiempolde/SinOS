@@ -41,6 +41,3 @@ int console_newline(Layer* layer, int cursorY) {
 void console_clear(Layer* console_layer) {
     put_rect_refresh(console_layer, DFT_CSL_BOR, DFT_CSL_TIT_H, CSL_CON_H_SIZE, CSL_CON_V_SIZE, BLACK);
 }
-
-void parse_cmd(Layer* console_layer, char* cmd) {
-}

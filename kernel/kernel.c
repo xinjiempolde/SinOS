@@ -29,25 +29,18 @@ void kernel_main() {
     install_isr();
     install_irq();
     uint8_t* mouse_buf = (uint8_t*)mem_alloc_4k(memman, 1024);
-    // uint8_t* back_buf = (uint8_t*)mem_alloc_4k(memman, bootInfo->screen_h*bootInfo->screen_w*0x10); // should modify this
-    uint8_t* back_buf = (uint8_t*)mem_alloc_4k(memman, 0x1000000); // should modify this
-    uint8_t* window_buf = (uint8_t*)mem_alloc_4k(memman, 0x10000);
+    uint8_t* back_buf = (uint8_t*)mem_alloc_4k(memman, bootInfo->screen_h*bootInfo->screen_w); // should modify this
+    uint8_t* window_buf = (uint8_t*)mem_alloc_4k(memman, 160*68);
     init_mouse_cursor(mouse_buf);
     init_background(back_buf);
     init_window_buf(window_buf, 160, 68, "window");
     
     layman = init_layman(memman);
     mouse_layer = alloc_layer(layman, mouse_buf, 16, 16, 100);
-    Layer* back_layer = alloc_layer(layman, back_buf, bootInfo->screen_h, bootInfo->screen_w, 0);
+    alloc_layer(layman, back_buf, bootInfo->screen_h, bootInfo->screen_w, 0);
     window_layer = alloc_layer(layman, window_buf, 68, 160, 1);
-    add_layer(layman, mouse_layer);
-    add_layer(layman, back_layer);
-    add_layer(layman, window_layer);
-    move_layer(window_layer, 50, 50);
+    move_layer(window_layer, 200, 200);
 
-    /* just vmware's bug, add this line to avoid */
-    fill_rect((uint8_t*)bootInfo->vram, 0, 0, 0, 0, 0, BLACK);
-    repaint_layers(layman);
 
     char* s_buf = (char*)mem_alloc_4k(memman, 64);
     timer_t* sec3Timer = set_timer(2);
@@ -55,12 +48,13 @@ void kernel_main() {
 
     task_init();
     Task* mytask = task_alloc();
-    mytask->tss.EIP = (uint32_t)&console_task;
-    mytask->tss.ESP = mem_alloc_4k(memman, sizeof(0x100));
+    mytask->tss.EIP = (uint32_t)(&console_task);
+    mytask->tss.ESP = mem_alloc_4k(memman, sizeof(0x1000));
     while(1) {
         count++;
         if (sec3Timer->timeoutFlags == TIME_OUT) {
-            task_switch();
+            //task_switch();
+            asm volatile ("ljmp $32, $0x0");
             restart_timer(sec3Timer);
         }
         if (count % 100 == 0) {

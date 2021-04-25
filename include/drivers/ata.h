@@ -1,27 +1,44 @@
 #ifndef ATA_H
 #define ATA_H
 
-#define ATA_PRI_BASE        0x1F0
-#define ATA_PRI_DATA_PORT   (ATA_PRI_BASE+0)
-#define ATA_PRI_ERRO_PORT   (ATA_PRI_BASE+1)
-#define ATA_PRI_SECT_PORT   (ATA_PRI_BASE+2)
-#define ATA_PRI_LBAlo_PORT  (ATA_PRI_BASE+3)
-#define ATA_PRI_LBAmid_PORT (ATA_PRI_BASE+4)
-#define ATA_PRI_LBAhi_PORT  (ATA_PRI_BASE+5)
-#define ATA_PRI_DRIVE_PORT  (ATA_PRI_BASE+6)
-#define ATA_PRI_STATUS_PORT (ATA_PRI_BASE+7)
-#define ATA_PRI_CMD_PORT    (ATA_PRI_BASE+7)
+#include <cpu/type.h>
 
-#define ATA_SEC_BASE 0x170
-#define ATA_SEC_DATA_PORT   (ATA_SEC_BASE+0)
-#define ATA_SEC_ERRO_PORT   (ATA_SEC_BASE+1)
-#define ATA_SEC_SECT_PORT   (ATA_SEC_BASE+2)
-#define ATA_SEC_LBAlo_PORT  (ATA_SEC_BASE+3)
-#define ATA_SEC_LBAmid_PORT (ATA_SEC_BASE+4)
-#define ATA_SEC_LBAhi_PORT  (ATA_SEC_BASE+5)
-#define ATA_SEC_DRIVE_PORT  (ATA_SEC_BASE+6)
-#define ATA_SEC_STATUS_PORT (ATA_SEC_BASE+7)
-#define ATA_SEC_CMD_PORT    (ATA_SEC_BASE+7)
+#define ATA_PRI_BASE_PORT 0x1f0
+#define ATA_SEC_BASE_PORT 0x170
 
-void identify(void);
+typedef struct AtaPorts AtaPorts;
+typedef struct AtaBus AtaBus;
+typedef struct disk_array disk_array;
+
+struct AtaPorts {
+    uint16_t data_port;
+    uint16_t error_port;
+    uint16_t feautre_port;
+    uint16_t sector_count_port;
+    uint16_t LBAlo_port;
+    uint16_t LBAmid_port;
+    uint16_t LBAhi_port;
+    uint16_t drive_port;
+    uint16_t status_port;
+    uint16_t command_port;
+    uint16_t control_port;
+};
+
+struct AtaBus {
+    bool is_master;
+    uint16_t io_base_port;
+    AtaPorts ata_ports;
+};
+
+struct disk_array {
+    bool is_exists[4];
+    AtaBus bus_array[4];
+};
+
+void init_all_disk(disk_array* disks);
+void init_ata_bus(AtaBus* ataBus, bool is_master, uint16_t base_port);
+bool ata_identify(AtaBus* bus);
+void ata_write(AtaBus* bus, uint32_t LBA, uint8_t* data, int nbytes);
+void ata_read(AtaBus* bus, uint32_t LBA, char* buf, int nbytes);
+void ata_flush(AtaBus* bus);
 #endif

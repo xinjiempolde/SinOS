@@ -8,6 +8,7 @@ LayerManager* init_layman(MemMan* memman) {
     LayerManager* layman = (LayerManager*)mem_alloc_4k(memman, sizeof(LayerManager));
     layman->numOfLayer = 0;
     layman->vram = (uint8_t*)bootInfo->vram;
+    mem_alloc_4k(memman, 0x100000); // vmware's bug
     layman->map = (uint8_t*)mem_alloc_4k(memman, bootInfo->screen_h * bootInfo->screen_w);
     for (i = 0; i < MAX_LAYER_NUM; i++) {
         layman->layerList[i].flag = LAYER_NO_USE;
@@ -22,6 +23,7 @@ Layer* alloc_layer(LayerManager* layman, uint8_t* buf, int h, int w, int z) {
     for (i = 0; i < MAX_LAYER_NUM; i++) {
         if (layman->layerList[i].flag == LAYER_NO_USE) break;
     }
+
     /* if found */
     if (i < MAX_LAYER_NUM) {
         emptyLayer = &(layman->layerList[i]);
@@ -34,6 +36,8 @@ Layer* alloc_layer(LayerManager* layman, uint8_t* buf, int h, int w, int z) {
         emptyLayer->flag = LAYER_IN_USE;
         emptyLayer->layman = layman;
     }
+
+    add_layer(layman, emptyLayer);
     return emptyLayer;
     
 }
@@ -57,7 +61,9 @@ void add_layer(LayerManager* layman, Layer* layer) {
     }
     layman->layerIndexList[i] = layer; // add layer
     layman->numOfLayer++;
+
     repaint_layers(layman);
+
 }
 
 void set_layer_level(Layer* layer, int z) {
@@ -121,8 +127,9 @@ void move_layer(Layer* layer, int x, int y) {
 void repaint_layers(LayerManager* layman) {
     int i, x, y, lid, index;
     uint8_t c;
+    Layer* layer;
     for (i = 0; i < layman->numOfLayer; i++) {
-        Layer* layer = layman->layerIndexList[i];
+        layer = layman->layerIndexList[i];
         lid = i; // layer id
         for (y = 0; y < layer->height; y++) {
             for (x = 0; x < layer->weight; x++) {
@@ -135,6 +142,7 @@ void repaint_layers(LayerManager* layman) {
             }
         }
     }
+    
 }
 
 void repaint_single_layer(Layer* l, int x0, int y0, int w, int h) {

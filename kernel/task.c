@@ -8,6 +8,11 @@
 #include <cpu/timer.h>
 #include <drivers/keyboard.h>
 #include <libc/string.h>
+#include <drivers/ata.h>
+#include <kernel/pci.h>
+#include <fs/fs.h>
+#include <libc/mem.h>
+
 TSS tss_curr;
 TSS tss_test;
 extern LayerManager* layman;
@@ -24,11 +29,10 @@ void console_task() {
 
     char cmd[256] = {'\0'}; // command
     char s[32];
-    uint8_t* console_buf = mem_alloc_4k(memMan, DFT_CSL_H*DFT_CSL_W);
+    uint8_t* console_buf = (uint8_t*)mem_alloc_4k(memMan, DFT_CSL_H*DFT_CSL_W);
     init_console_buf(console_buf, DFT_CSL_W, DFT_CSL_H);
     Layer* console_layer = alloc_layer(layman, console_buf, DFT_CSL_H, DFT_CSL_W, 6);
-    add_layer(layman, console_layer);
-    move_layer(console_layer, 100, 100);
+    move_layer(console_layer, 200, 200);
     while (1) {
         /* keyboard buff is not null */
         if (key_buff[kb_idx] != '\0') {
@@ -55,6 +59,22 @@ void console_task() {
                     console_clear(console_layer);
                     cursorX = DFT_CSL_BOR;
                     cursorY = DFT_CSL_TIT_H;
+                } else if (strcmp(cmd,"ls") == 0) {
+                    init_fs();
+                    // dir_entry dir;
+                    // dir.i_no = alloc_inode();
+                    // memory_copy("a.c", dir.filename, 3);
+                    // write_dir_entry(&dir, 0);
+
+                    // dir.i_no = alloc_inode();
+                    // memory_copy("hello.h", dir.filename, 7);
+                    // write_dir_entry(&dir, 1);
+
+                    char ss[512] = "woshizhouxinjiwoweizijidaiyan";
+                    create_file("singheart.c", ss, 512);
+                    display_all_files();
+                } else if (strcmp(cmd, "lspci") == 0) {
+                    init_pcilist();
                 } else {
                     put_str_refresh(console_layer, cursorX, cursorY, "command not found", WHITE);
                     cursorY = console_newline(console_layer, cursorY);
@@ -92,7 +112,7 @@ Task* task_init() {
     Task* task;
 
     memMan = (MemMan*)MEM_MAN_ADDR;
-    tCtrl = mem_alloc_4k(memMan, sizeof(TaskCtrl));
+    tCtrl = (TaskCtrl*)mem_alloc_4k(memMan, sizeof(TaskCtrl));
     tCtrl->task_num = 0;
     for (i = 0; i < MAX_TASK_NUM; i++) {
         task = &(tCtrl->task_array[i]);
@@ -103,7 +123,7 @@ Task* task_init() {
          * TSS' size as "limit", 0x89 (Present|Executable|Accessed) as "access byte"
          * and 0x40 (Size-bit) as "flags"
          */
-        gdt_set_gate(3+i, &(task->tss), sizeof(TSS), 0x89, 0x40);
+        gdt_set_gate(3+i, (uint32_t)&(task->tss), sizeof(TSS), 0x89, 0x40);
     }
     task = task_alloc();
     tCtrl->current = 0;
@@ -142,6 +162,7 @@ Task* task_alloc(void) {
     task->tss.SS = DS_SEL;
     task->tss.DS = DS_SEL;
     task->tss.FS = DS_SEL;
+    task->tss.GS = DS_SEL;
     task->tss.LDTR = 0;
     task->tss.IOPB = sizeof(TSS) << 16;
 

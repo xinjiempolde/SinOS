@@ -59,7 +59,6 @@ static void keyboard_callback(registers_t r) {
     } else if (scan_code == KEY_CAPSLOCK) {
         isCapsLock ^= 0x1;
     } else if (scan_code < KEY_MAX){
-        char *str;
         if (isShfit ^ isCapsLock) {
             str = shirt_table[scan_code - 1];
         } else {

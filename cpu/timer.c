@@ -75,7 +75,6 @@ void init_timer() {
 
 timer_t* set_timer(unsigned int timeout) {
     timer_t* alloc_timer;
-    timer_t* p;
     int i;
     /* interrupt diable */
     asm volatile ("cli");
@@ -99,7 +98,6 @@ timer_t* set_timer(unsigned int timeout) {
 }
 
 void restart_timer(timer_t* timer) {
-    timer_t* p;
     asm volatile ("cli");
 
     timer->systimePlusCount = timerMan->sysTimeCount + timer->count;
@@ -120,7 +118,7 @@ void tune_timer(timer_t* timer) {
         timerMan->next = timer;
         timer->nextNode = NULL;
         timer->preNode = NULL;
-        return timer;
+        return;
     }
 
     p = timerMan->next;

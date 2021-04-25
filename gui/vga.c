@@ -9,6 +9,8 @@ void set_palette(int start, int end, uint8_t* rgb);
 void put_pixel(int row, int col, uint8_t color);
 
 
+static int print_cursor_x = 0;
+static int print_cursor_y = 0;
 void init_palette() {
     /* see links: https://en.wikipedia.org/wiki/Web_colors */
     static uint8_t table_rgb[16 * 3] = {
@@ -96,7 +98,9 @@ void printf(const char* fmt, ...) {
      */
     va_list args = (va_list)((char*)(&fmt) + 4);     // get the next parameter from stack, see c call conventions
     vsprintf(buf, fmt, args);
-    put_string((uint8_t*)bootInfo->vram, bootInfo->screen_w, 0, 0, buf, BLACK);
+    put_string((uint8_t*)bootInfo->vram, bootInfo->screen_w, print_cursor_x, print_cursor_y, buf, BRIGHT_RED);
+    print_cursor_x = 0;
+    print_cursor_y += CHAR_H;
 }
 
 void sprintf(char* buf, const char* fmt, ...) {
@@ -110,6 +114,7 @@ void vsprintf(char* buf, const char* fmt, va_list args) {
     int n_digits = 0; // number of digits
     char tmp[11]; // for decimal number, unsigned int ranges 0～4294967295, the last bit for '\0'
                   // for hex number, 0x12345678, 11 bits, the last bit for '\0'
+    char* string = NULL;
     for (i_fmt = 0; fmt[i_fmt] != '\0'; i_fmt++) {
         if (fmt[i_fmt] != '%') {
             buf[i_buf++] = fmt[i_fmt];
@@ -128,6 +133,13 @@ void vsprintf(char* buf, const char* fmt, va_list args) {
                 memory_copy(tmp, buf + i_buf, n_digits);
                 i_buf += n_digits;
                 p_next_arg += 4; // every parameter occuped 4 bytes in stack
+                break;
+            case 's':
+                // p_next_arg保存的是字符串的地址的地址，*(char*)p_next_arg是字符串的地址
+                string = (*(uint32_t*)p_next_arg);
+                memory_copy(string, buf + i_buf, strlen(string)); 
+                i_buf += strlen(string);
+                p_next_arg += 4;
                 break;
             default:
                 break;

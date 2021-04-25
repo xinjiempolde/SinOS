@@ -6,8 +6,8 @@ KERNEL      = KERNEL.BIN
 KERNEL_ADDR = 0x10000
 CC          = i386-elf-gcc
 LD          = i386-elf-ld
-CFLAGS      = -g -ffreestanding -Wall -Wextra -fno-exceptions -m32 -nostdinc -I include
-C_SOURCES   = ${wildcard cpu/*c drivers/*.c kernel/*.c libc/*.c mm/*.c gui/*.c}
+CFLAGS      = -g -ffreestanding -O0 -Wall -Wextra -fno-exceptions -m32 -nostdinc -I include
+C_SOURCES   = ${wildcard cpu/*c drivers/*.c kernel/*.c libc/*.c mm/*.c gui/*.c fs/*.c}
 OBJ         = ${C_SOURCES:.c=.o cpu/interrupts.o mm/cache.o kernel/asm_func.o}
 
 $(IMG_FILE): bootsect.bin $(LOADER) $(KERNEL)
@@ -44,11 +44,15 @@ debug-qemu: symbol.elf
 debug-bochs: bochsrc.txt
 	bochs -q
 
+.PHONY: debug-vmware
+debug-vmware: symbol.elf
+	i386-elf-gdb -ex "target remote localhost:8832" -ex "symbol-file symbol.elf"
+
 .PHONY: run
 run: $(IMG_FILE)
 	qemu-system-i386 -fda $<
 
 .PHONY: clean
 clean:
-	rm -rf *.bin *.BIN *.img ./*/*.o
+	rm -rf *.bin *.BIN sinos.img ./*/*.o
 	rm -rf symbol.elf

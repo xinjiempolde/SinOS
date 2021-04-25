@@ -21,5 +21,4 @@
 void init_console_buf(uint8_t* buf, int weight, int height);
 int console_newline(Layer* layer, int cursorY);
 void console_clear(Layer* console_layer);
-void parse_cmd(Layer* console_layer, char* cmd);
 #endif

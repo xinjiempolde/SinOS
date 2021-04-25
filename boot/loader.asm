@@ -10,6 +10,8 @@ start_of_loader:
     mov ax, BaseOfRootDir
     mov es, ax
     xor di, di                                 ; set di=0x0000, es:di => entry
+
+
 find_kernel_loop:
     cld
     mov si, KERNEL_FILENAME                    ; ds:si => 'KERNEL   BIN'

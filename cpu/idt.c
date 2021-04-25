@@ -1,6 +1,6 @@
 #include <cpu/idt.h>
 // idt_gate_t* idt = (idt_gate_t*)IDT_ADR;
-idt_gate_t idt[IDT_ENTRIES];
+idt_gate_t* idt = (idt_gate_t*)IDT_ADR;
 /**
  * you can see the details below:
  * https://wiki.osdev.org/Interrupt_Descriptor_Table

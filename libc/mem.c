@@ -6,3 +6,9 @@ void memory_copy(char* src, char* dst, int nbytes) {
     }
 }
 
+void memset(char* buf, int nbytes) {
+    int i;
+    for (i = 0; i < nbytes; i++) {
+        buf[i] = 0;
+    }
+}

@@ -12,5 +12,4 @@ void init_background(uint8_t* buf) {
     fill_rect(buf, bootInfo->screen_w, 2, bootInfo->screen_h - SLIDE_BAR_H + 2, 60, SLIDE_BAR_H - 4, BLACK);
     fill_rect(buf, bootInfo->screen_w, 2, bootInfo->screen_h - SLIDE_BAR_H + 2, 58, SLIDE_BAR_H - 6, WHITE);
     fill_rect(buf, bootInfo->screen_w, 4, bootInfo->screen_h - SLIDE_BAR_H + 4, 56, SLIDE_BAR_H - 8, DARK_GRAY);
-   
 }
