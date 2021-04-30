@@ -6,7 +6,6 @@
 disk_array disks;
 
 void init_all_disk(disk_array* disk) {
-    bool is_exist; // 该总线上是否存在ATA设备
     int i;
 
     init_ata_bus(&disk->bus_array[0], TRUE, ATA_PRI_BASE_PORT);
@@ -45,8 +44,7 @@ void init_ata_bus(AtaBus* ataBus, bool is_master, uint16_t base_port) {
  * idenfify command, see: https://wiki.osdev.org/ATA_PIO_Mode
  */
 bool ata_identify(AtaBus* bus) {
-    uint16_t data, status;
-    int i;
+    uint16_t status;
     AtaPorts* ports = &(bus->ata_ports);
 
     /* detect floating bus */
@@ -91,17 +89,6 @@ bool ata_identify(AtaBus* bus) {
         return FALSE;
     }
 
-    char s[512];
-    /* Read 256 16-bit values from data port */
-    // for (i = 0; i < 256; i++) {
-    //     data = port_word_in(ports->data_port);
-    //     if (((data & 0xff) != 0) && ((data & 0xff00) != 0) ) {
-    //         append(s, (char)((data >> 8) & 0xff));
-    //         append(s, (char)(data & 0xff));
-    //     }
-    //     if (i >= 40) break;
-    // }
-    // printf(s);
     return TRUE;
 }
 
@@ -136,7 +123,8 @@ void ata_write(AtaBus* bus, uint32_t LBA, uint8_t* data, int nbytes) {
     ata_flush(bus);
 }
 
-void ata_read(AtaBus* bus, uint32_t LBA, char* buf, int nbytes) {
+void ata_read(AtaBus* bus, uint32_t LBA, uint8_t* buf, int nbytes) {
+    if (nbytes <= 0) return;
     uint16_t status, data = 0;
     int i;
     AtaPorts* ports = &(bus->ata_ports);

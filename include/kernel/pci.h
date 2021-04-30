@@ -8,5 +8,5 @@
 #include <cpu/type.h>
 
 uint32_t r_pci_32(uint8_t bus, uint8_t device, uint8_t func, uint8_t pcireg);
-int init_pcilist(void);
+void init_pcilist(void);
 #endif

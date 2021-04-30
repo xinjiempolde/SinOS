@@ -9,7 +9,7 @@ uint32_t r_pci_32(uint8_t bus, uint8_t device, uint8_t func, uint8_t pcireg) {
     return ret;
 }
 
-int init_pcilist(void) {
+void init_pcilist(void) {
     uint8_t bus, device, func;
     uint32_t data;
     for (bus = 0; bus != 0xff; bus++) {

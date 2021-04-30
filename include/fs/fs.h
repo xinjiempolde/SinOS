@@ -1,24 +1,44 @@
 #ifndef __FS_FS_H
 #define __FS_FS_H
 
+#include <fs/dir.h>
+#include <fs/super_block.h>
+
 #define MAX_FILES_PER_PART 4096	    // 每个分区所支持最大创建的文件数
 #define BITS_PER_SECTOR 4096	    // 每扇区的位数
 #define SECTOR_SIZE 512		    // 扇区字节大小
 #define BLOCK_SIZE SECTOR_SIZE	    // 块字节大小
 
-// 文件类型 file type
+#define ROOT_INODE_ID 0// 根节点的ID，也是根目录的ID
+
+#ifndef FT_FILE
+// 目录的类型
 #define FT_UNDIFINE 0x00   // 未定义的类型
 #define FT_FILE 0x01       // 普通的文件
 #define FT_DIRECOTRY 0x02  // 目录
+#endif
 
-#include <fs/dir.h>
+/* 双向链表，用于路径切换 */
+struct path_node {
+    int inode_id;
+    char dir_name[MAX_FILE_NAME_LEN];
 
+    struct path_node* pre;
+    struct path_node* next;
+};
+
+void init_sb(super_block* sb);
 void init_fs(void);
-void display_all_files(void);
+int read_all_files(dir_entry* directory, dir_entry argv[]);
+
 void write_dir_entry(dir_entry* dir, int offset);
 
-void create_file(char* filename, uint8_t* content, int nbytes);
+void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes);
+int read_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes);
 
-int alloc_inode();
 int alloc_content_block();
+void free_conten_block(int block_id);
+
+void switch_forward(dir_entry* directory);
+void switch_backward();
 #endif

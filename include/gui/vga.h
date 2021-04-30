@@ -36,6 +36,8 @@
 
 #define SLIDE_BAR_H 28
 
+#define ASCII_NL 0x0a
+
 /* boot infomation, get from assembly */
 typedef struct {
     short screen_w;

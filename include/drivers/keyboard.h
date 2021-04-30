@@ -5,6 +5,7 @@
 #define KEY_ENTER 28
 #define KEY_BACKSPACE 14
 #define KEY_CAPSLOCK 58
+#define KEY_ESC 1
 #define KEY_MAX 70
 void init_keyboard();
 #endif

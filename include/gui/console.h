@@ -21,4 +21,15 @@
 void init_console_buf(uint8_t* buf, int weight, int height);
 int console_newline(Layer* layer, int cursorY);
 void console_clear(Layer* console_layer);
+
+void console_run();
+void parse_cmd(char* cmd_str);
+void console_printfn(const char* fmt, ...);
+void console_print(int color, const char* fmt, ...);
+
+void gen_path(char* path);
+int len_argv(char** argv);
+void clear_argv(char** argv);
+
+void cmd_gedit(char** argv);
 #endif

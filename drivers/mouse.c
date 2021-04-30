@@ -3,6 +3,7 @@
 #include <libc/function.h>
 #include <libc/string.h>
 #include <libc/mem.h>
+#include <libc/math.h>
 #include <drivers/ports.h>
 #include <gui/vga.h>
 #include <gui/layer.h>
@@ -15,12 +16,15 @@ typedef struct {
 } mouse_info;
 
 static mouse_info m_info;
+static mouse_info span;
 static BOOTINFO* bootInfo = (BOOTINFO*)BOOTINFO_ADDR;
 
 /* definition in kernel.c */
 extern LayerManager* layman;
 extern Layer* mouse_layer;
-extern Layer* window_layer;
+extern Layer* console_layer;
+extern Layer* gedit_layer;
+extern bool readable;
 int write_ready() {
     if ((port_byte_in(MOUSE_STATE_PORT) & 0x02) == 0) {
         return 1;
@@ -79,8 +83,12 @@ static void mouse_callback(registers_t r) {
          */
         //fill_rect(0, 0, 1, 1, LIGHT_BRIGHT_BLUE);
 
-        m_info.x += buffer[1];
-        m_info.y -= buffer[2];
+        span.x = 2*buffer[1];
+        span.y = -2*buffer[2];
+
+        m_info.x += span.x;
+        m_info.y += span.y;
+
         /* why -1 instead of -16? hide the mouse cursor in right */
         if (m_info.x < 0) m_info.x = 0;
         if (m_info.x >= bootInfo->screen_w-1) m_info.x = bootInfo->screen_w-1;
@@ -88,7 +96,15 @@ static void mouse_callback(registers_t r) {
         if (m_info.y >= bootInfo->screen_h-1) m_info.y = bootInfo->screen_h-1;
         move_layer(mouse_layer, m_info.x, m_info.y);
         if (buffer[0] & LEFT_BTN_ON) {
-            move_layer(window_layer, m_info.x, m_info.y);
+            if (!readable && in_rect(gedit_layer->x, gedit_layer->y, gedit_layer->weight, gedit_layer->height, m_info.x, m_info.y)){
+                if (in_rect(gedit_layer->x+gedit_layer->weight-21, gedit_layer->y, 16, 16, m_info.x, m_info.y)) {
+                    readable = TRUE;
+                } else {
+                    move_layer(gedit_layer, gedit_layer->x+span.x, gedit_layer->y+span.y);
+                }
+            } else if (readable && in_rect(console_layer->x, console_layer->y, console_layer->weight, console_layer->height, m_info.x, m_info.y)) {
+                move_layer(console_layer, console_layer->x+span.x, console_layer->y+span.y);
+            }
         }
     }
     UNUSED(r);

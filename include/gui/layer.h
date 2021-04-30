@@ -32,6 +32,7 @@ LayerManager* init_layman(MemMan* memman);
 Layer* alloc_layer(LayerManager* layman, uint8_t* buf, int h, int w, int z);
 void add_layer(LayerManager* layman, Layer* layer);
 void set_layer_level(Layer* layer, int z);
+void del_layer(Layer* layer);
 void move_layer(Layer* layer, int x, int y);
 void repaint_layers(LayerManager* layman);
 void repaint_partial_layers(LayerManager* layman, int x0, int y0, int x1, int y1, int begin_z);

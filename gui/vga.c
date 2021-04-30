@@ -3,6 +3,7 @@
 #include <drivers/font16.h>
 #include <libc/mem.h>
 #include <libc/string.h>
+#include <drivers/keyboard.h>
 static BOOTINFO* bootInfo = (BOOTINFO*)BOOTINFO_ADDR; 
 
 void set_palette(int start, int end, uint8_t* rgb);
@@ -79,6 +80,7 @@ void put_string(uint8_t* buf, int buf_w, int x0, int y0, char* str, uint8_t colo
     int i = 0;
     int x = x0, y = y0;
     while (str[i] != '\0') {
+
         put_char(buf, buf_w, x, y, str[i], color);
         x += CHAR_W;
         if (x >= buf_w) {
@@ -124,20 +126,20 @@ void vsprintf(char* buf, const char* fmt, va_list args) {
         switch (fmt[i_fmt]) {
             case 'x':
                 n_digits = uint_to_hex(*(unsigned int*)p_next_arg, tmp);
-                memory_copy(tmp, buf + i_buf, n_digits);
+                memory_copy((uint8_t*)tmp, (uint8_t*)(buf + i_buf), n_digits);
                 i_buf += n_digits;
                 p_next_arg += 4;
                 break;
             case 'd':
                 n_digits = uint_to_dec(*(unsigned int*)p_next_arg, tmp);
-                memory_copy(tmp, buf + i_buf, n_digits);
+                memory_copy((uint8_t*)tmp, (uint8_t*)(buf + i_buf), n_digits);
                 i_buf += n_digits;
                 p_next_arg += 4; // every parameter occuped 4 bytes in stack
                 break;
             case 's':
                 // p_next_arg保存的是字符串的地址的地址，*(char*)p_next_arg是字符串的地址
-                string = (*(uint32_t*)p_next_arg);
-                memory_copy(string, buf + i_buf, strlen(string)); 
+                string = (char*)(*(uint32_t*)p_next_arg);
+                memory_copy((uint8_t*)string, (uint8_t*)(buf + i_buf), strlen(string)); 
                 i_buf += strlen(string);
                 p_next_arg += 4;
                 break;

@@ -1,4 +1,5 @@
 #include <libc/string.h>
+#include <gui/vga.h>
 /**
  * unsigned int converts to decimal number
  * return the number of digits
@@ -111,4 +112,51 @@ void strcat(char* dst, char* src) {
         dst[i++] = src[j++];
     }
     dst[i] = '\0';
+}
+
+/* 有时间需要改进 */
+void strcp(char* src, char* dst, unsigned int nbytes) {
+    unsigned int i;
+    for (i = 0; i < nbytes; i++) {
+        dst[i] = src[i];
+    }
+    dst[i] = '\0';
+
+}
+
+/* 按指定字符分隔字符串，结果保存到argv中，返回子串数量 */
+int str_split(char* string, char** argv, char token) {
+    int argc = 0; // 子串的数量
+    char* substring = string; // 子串
+
+    while (*substring) {
+        argv[argc] = substring;
+
+        if (*substring == '\"') { // 保护"this is a test"双引号中的空格分隔
+            substring++;
+            while (*substring != '\"') {
+                substring++;
+            }
+            substring++;
+            *substring = '\0';
+            substring++;
+            argc++;
+            continue;
+        }
+
+        while (*substring != token && *substring != '\0') {
+            substring++;    // 寻找下一个token
+        }
+
+        if (*substring) { // 如果没有结束，不是结尾
+            *substring = '\0';
+            substring++;
+        } else {
+            *substring = '\0'; // 是末尾了，只需要添\0, 不需要++，否则会越界
+        }
+
+        argc++;
+    }
+
+    return argc;
 }

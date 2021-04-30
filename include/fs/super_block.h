@@ -18,12 +18,14 @@ struct super_block {
 
    uint32_t inode_table_lba;	    // i结点表起始扇区lba地址
    uint32_t inode_table_sects;	    // i结点表占用的扇区数量
+   uint32_t inodenum_per_sec;  // 每个扇区含有的inode数量
 
-   uint32_t dir_entry_lba;  // 根目录区lba地址，所有文件的索引信息都在这里
-   uint32_t dir_entry_secs; // 根目录区所占的扇区数量
+   uint32_t dir_entry_lba;  // 目录区lba地址，所有文件的索引信息都在这里
+   uint32_t dir_entry_secs; // 目录区所占的扇区数量
 
    uint32_t data_start_lba;	    // 数据区开始的第一个扇区号
    uint8_t  pad[460];		    // 加上460字节,凑够512字节1扇区大小
 
 } __attribute__((packed));
+
 #endif

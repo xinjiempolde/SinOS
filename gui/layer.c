@@ -66,6 +66,20 @@ void add_layer(LayerManager* layman, Layer* layer) {
 
 }
 
+void del_layer(Layer* layer) {
+    int i, j;
+    LayerManager* layman = layer->layman;
+    for (i = 0; i < layman->numOfLayer; i++) {
+        if (layman->layerIndexList[i] == layer) break;
+    }
+
+    for (j = i; j < layman->numOfLayer - 1; j++) {
+        layman->layerIndexList[j] = layman->layerIndexList[j + 1];
+    }
+    layman->numOfLayer--;
+    repaint_partial_layers(layman, layer->x, layer->y, layer->x+layer->weight, layer->y+layer->height, 0);
+}
+
 void set_layer_level(Layer* layer, int z) {
     int i;
     int begin, end;
@@ -120,6 +134,7 @@ void move_layer(Layer* layer, int x, int y) {
     /* for the current position, repaint from the current layer */
     repaint_partial_layers(layman, x, y, x + layer->weight, y + layer->height, layer->z);
 }
+
 
 /**
  * repaint all layers with entire area

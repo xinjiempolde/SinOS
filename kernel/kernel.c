@@ -10,10 +10,13 @@
 #include <cpu/gdt.h>
 #include <kernel/task.h>
 #include <cpu/timer.h>
+#include <fs/fs.h>
 MemMan* memman = (MemMan*)MEM_MAN_ADDR;
 LayerManager* layman;
 Layer* mouse_layer;
 Layer* window_layer;
+extern super_block sb;
+
 void kernel_main() {
     gdt_install();
 
@@ -47,6 +50,14 @@ void kernel_main() {
     unsigned int count = 0;
 
     task_init();
+
+    init_sb(&sb);
+    if (sb.magic != 0x66) {
+        init_fs();
+    }
+
+    init_fs();
+    
     Task* mytask = task_alloc();
     mytask->tss.EIP = (uint32_t)(&console_task);
     mytask->tss.ESP = mem_alloc_4k(memman, sizeof(0x1000));

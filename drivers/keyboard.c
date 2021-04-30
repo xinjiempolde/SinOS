@@ -11,7 +11,7 @@ static char* shirt_table[] = {  "ESC", "!", "@", "#", "$",
                                 ")", "_", "+", "BackSpace", "Tab",
                                 "Q", "W", "E", "R", "T",
                                 "Y", "U", "I", "O", "P",
-                                "[", "]", "ENTER", "Ctrl", "A",
+                                "{", "}", "ENTER", "Ctrl", "A",
                                 "S", "D", "F", "G", "H",
                                 "J", "K", "L", ":", "\"",
                                 "`", "lShift", "\\", "Z",
@@ -46,9 +46,7 @@ static void keyboard_callback(registers_t r) {
     if (scan_code == KEY_ENTER) {
         append(key_buff, KEY_ENTER);
     } else if (scan_code == KEY_BACKSPACE) {
-        if (key_buff[0] != '\0') { // key_buff not null
-            append(key_buff, KEY_BACKSPACE);
-        }
+        append(key_buff, KEY_BACKSPACE);
     /* shift down */
     } else if (scan_code == 0x2a || scan_code == 0x36) {
         isShfit = TRUE;
@@ -58,6 +56,8 @@ static void keyboard_callback(registers_t r) {
     /* CapsLock down */
     } else if (scan_code == KEY_CAPSLOCK) {
         isCapsLock ^= 0x1;
+    } else if (scan_code == KEY_ESC) { 
+        append(key_buff, KEY_ESC);
     } else if (scan_code < KEY_MAX){
         if (isShfit ^ isCapsLock) {
             str = shirt_table[scan_code - 1];
