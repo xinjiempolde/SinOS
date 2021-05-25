@@ -36,8 +36,7 @@ int gedit_run() {
     gedit_layer = alloc_layer(layman, gedit_buf, DFT_EDIT_H, DFT_EDIT_W, 6);
     move_layer(gedit_layer, 400, 400);
 
-    strclear(key_buff);
-
+    init_all_var();
     while (1) {
         if (readable) {
             del_layer(gedit_layer);
@@ -136,6 +135,7 @@ void edit_backspace() {
 
 void edit_enter() {
     append(content[line_num], ASCII_NL);
+    append(content[line_num], 0);
     line_num++; // 下一行
 
     put_rect_refresh(gedit_layer, cursorX, cursorY, CHAR_W, CHAR_H, BLACK);
@@ -144,4 +144,18 @@ void edit_enter() {
 
     strclear(key_buff);
     kb_idx = -1; // why not 0? kb_idx++ will add 1, so don't worry
+}
+
+void init_all_var() {
+    int i;
+    cursorX = DFT_EDIT_BOR;
+    cursorY = DFT_EDIT_TIT_H;
+    line_num = 0; // 目前光标在内容区的第几行
+    kb_idx = 0; // keyboard buffuer index
+
+    strclear(key_buff);
+
+    for (i = 0; i < DFT_EDIT_CON_H; i++) {
+        content[i][0] = 0;
+    }
 }

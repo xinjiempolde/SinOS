@@ -215,9 +215,9 @@ void console_printfn(const char* fmt, ...) {
 
     va_list args = (va_list)((char*)(&fmt) + 4);     // get the next parameter from stack, see c call conventions
     vsprintf(s, fmt, args);
+
     str_split(s, argv, ASCII_NL);
     len = len_argv(argv);
-
     for (i = 0; i < len; i++) {
         put_str_refresh(console_layer, cursorX, cursorY, argv[i], WHITE);
         cursorY = console_newline(console_layer, cursorY);
@@ -252,8 +252,8 @@ void gen_path(char* path) {
 }
 
 int len_argv(char** argv) {
-    int i = 0;
-    for (i = 0; i < 5; i++) {
+    int i;
+    for (i = 0; i < 20; i++) {
         if (argv[i] == 0) {
             break;
         }
@@ -269,15 +269,21 @@ void clear_argv(char** argv) {
 }
 
 void cmd_gedit(char** argv) {
-    char buf[1024];
+    char buf[1024] = {0};
 
     if (len_argv(argv) != 2) {
         console_printfn("gedit must have 2 arguements!");
         return;
     }
 
+    if (search_dir_by_id(argv[1], cur_dir.i_no, FT_FILE) != FAIL) {
+        console_printfn("%s has exists!", argv[1]);
+        return;
+    }
+
     readable = FALSE;
     int line_num = gedit_run();
     transfer((char*)content, DFT_EDIT_CON_W, line_num, buf);
+
     create_file(cur_dir.i_no, argv[1], (uint8_t*)buf, strlen(buf));
 }

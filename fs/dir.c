@@ -29,6 +29,7 @@ int create_dir(char* dir_name, int parent_no) {
     dir_entry diretory;
     inode parent, cur_inode;
     int i;
+    int* one_indirect_sec[128];  // 缓存一级间接寻址扇区，能存储128个int类型的inode编号
     
     if (search_dir_by_id(dir_name, parent_no, FT_DIRECOTRY) != FAIL) { // 该目录已存在
         return FAIL;
@@ -49,11 +50,19 @@ int create_dir(char* dir_name, int parent_no) {
 
     if (parent_no >= 0) {
         open_inode(parent_no, &parent);
-        for (i = 0; i < 14; i++) {
+        for (i = 0; i < DIRECT_BLOCK_NUM; i++) {
             if (parent.i_sectors[i] == 0) { // 找到该目录结构下还没使用的inode编号
                 parent.i_sectors[i] = diretory.i_no;
                 break;
             }
+        }
+
+        /* 如果直接寻址数组已满，寻找一级间接寻址数组 */
+        if (i == DIRECT_BLOCK_NUM) {
+            if (parent.i_sectors[ONE_INDIRECT_ID] == 0) { // 一级间接寻址数组还没有分配磁盘快
+                parent.i_sectors[ONE_INDIRECT_ID] = alloc_content_block();
+            }
+            ata_read(&disks.bus_array[2], parent.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_sec, 512);
         }
         parent.i_size += 1; // 父亲目录下的文件数量+1
         save_inode(parent_no, &parent);

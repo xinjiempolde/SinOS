@@ -26,5 +26,6 @@ int edit_newline(Layer* layer, int cursorY);
 void edit_backspace();
 void edit_enter();
 int get_line_num(int cursorY);
+void init_all_var();
 
 #endif

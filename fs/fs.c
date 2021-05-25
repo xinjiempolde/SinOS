@@ -124,7 +124,7 @@ void write_dir_entry(dir_entry* dir, int offset) {
 void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes) {
     dir_entry file;
     inode parent_inode, cur_inode;
-    uint8_t block_sector[512];
+    uint8_t block_sector[512] = {0};
     int block_no;
     int i;
 
@@ -194,8 +194,6 @@ int read_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes)
         ata_read(&disks.bus_array[2], sb.data_start_lba + cur_inode.i_sectors[i], content + 512 * i, 512);
     }
     ata_read(&disks.bus_array[2], sb.data_start_lba + cur_inode.i_sectors[i], content + 512 * i, real_bytes % 512); // 不够512字节的扇区
-    // printf("content:%s", content);
-
     return SUCCESS;
 }
 
