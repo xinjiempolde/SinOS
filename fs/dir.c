@@ -13,15 +13,21 @@ void save_dir(dir_entry* dir) {
     uint8_t sector[512];
 
     /* 将目录写入到对应的磁盘中 */
-    ata_read(&disks.bus_array[2], sb.dir_entry_lba, sector, 512);
-    ((dir_entry*)sector)[dir->i_no] = *dir;
-    ata_write(&disks.bus_array[2], sb.dir_entry_lba, sector, 512);
+    int num_per_sec = 512 / sizeof(dir_entry);  // 每个扇区有多少个目录项,值为16
+    int offset = dir->i_no / num_per_sec;       // 相对于目录起始扇区的偏移数
+    int sec_id = sb.dir_entry_lba + offset;     // 对应的扇区lba的ID
+    
+    ata_read(&disks.bus_array[2], sec_id, sector, 512);
+    ((dir_entry*)sector)[dir->i_no % num_per_sec] = *dir;
+    ata_write(&disks.bus_array[2], sec_id, sector, 512);
 }
 
 void open_dir(int inode_no, dir_entry* buf) {
     uint8_t sector[512];
-    ata_read(&disks.bus_array[2], sb.dir_entry_lba, sector, 512);
-    memory_copy((uint8_t*)&(((dir_entry*)sector)[inode_no]), (uint8_t*)buf, sizeof(dir_entry));
+    int dir_per_sec = 512 / sizeof(dir_entry);  // 一个扇区有多少个目录项(16个)
+    int offset = inode_no / dir_per_sec;
+    ata_read(&disks.bus_array[2], sb.dir_entry_lba + offset, sector, 512);
+    memory_copy((uint8_t*)&(((dir_entry*)sector)[inode_no % dir_per_sec]), (uint8_t*)buf, sizeof(dir_entry));
 }
 
 /* 创建一个目录 */
@@ -29,9 +35,10 @@ int create_dir(char* dir_name, int parent_no) {
     dir_entry diretory;
     inode parent, cur_inode;
     int i;
-    int* one_indirect_sec[128];  // 缓存一级间接寻址扇区，能存储128个int类型的inode编号
+    int one_indirect_sec[128] = {0};  // 缓存一级间接寻址扇区，能存储128个int类型的inode编号
     
     if (search_dir_by_id(dir_name, parent_no, FT_DIRECOTRY) != FAIL) { // 该目录已存在
+        printf("该目录已经存在");
         return FAIL;
     }
     
@@ -44,6 +51,7 @@ int create_dir(char* dir_name, int parent_no) {
     diretory.i_no = alloc_inode();
     diretory.file_byte_size = 0;
     memory_copy((uint8_t*)dir_name, (uint8_t*)diretory.filename, strlen(dir_name));
+
 
     /* 将目录写入到对应的磁盘中 */
     save_dir(&diretory);
@@ -59,11 +67,21 @@ int create_dir(char* dir_name, int parent_no) {
 
         /* 如果直接寻址数组已满，寻找一级间接寻址数组 */
         if (i == DIRECT_BLOCK_NUM) {
-            if (parent.i_sectors[ONE_INDIRECT_ID] == 0) { // 一级间接寻址数组还没有分配磁盘快
+            if (parent.i_sectors[ONE_INDIRECT_ID] == 0) { // 一级间接寻址数组还没有分配磁盘块
                 parent.i_sectors[ONE_INDIRECT_ID] = alloc_content_block();
+            } else {    // 如果已经分配了，读取到数组中
+                ata_read(&disks.bus_array[2], parent.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_sec, 512);
             }
-            ata_read(&disks.bus_array[2], parent.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_sec, 512);
+            for (i = 0; i < 128; i++) {
+                if (one_indirect_sec[i] == 0) {
+                    one_indirect_sec[i] = diretory.i_no;
+                    break;
+                }
+
+            }
+            ata_write(&disks.bus_array[2], parent.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_sec, 512);
         }
+
         parent.i_size += 1; // 父亲目录下的文件数量+1
         save_inode(parent_no, &parent);
     }
@@ -86,9 +104,9 @@ int search_dir(char* dir_name, dir_entry* current_directory, int type) {
     dir_entry sub_dir;
     int i;
     open_inode(current_directory->i_no, &parent_inode);
-    for (i = 0; i < 14; i++) {
-        if (parent_inode.i_sectors[i] == 0) {
-            break;
+    for (i = 0; i < DIRECT_BLOCK_NUM; i++) {    // 现从直接索引数组中找inode
+        if (parent_inode.i_sectors[i] == 0) {   // 到此处表明已经不寻找inode了，该目录下没有该(目录)文件
+            return FAIL;
         }
         open_dir(parent_inode.i_sectors[i], &sub_dir);
         if (strcmp(dir_name, sub_dir.filename) == 0) {
@@ -99,6 +117,25 @@ int search_dir(char* dir_name, dir_entry* current_directory, int type) {
             }
         }
     }
+
+    /* 在直接索引数组中没有找到，再从一级间接寻址数组中找 */
+    int one_indrect_array[128] = {0};
+    ata_read(&disks.bus_array[2], parent_inode.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indrect_array, 512);
+    for (i = 0; i < 128; i++) {
+        if (one_indrect_array[i] == 0) {
+            return FAIL;        // 在一级间接寻址中找不到
+        }
+        open_dir(one_indrect_array[i], &sub_dir);
+        if (strcmp(dir_name, sub_dir.filename) == 0) {
+            if (sub_dir.f_type == type) {
+                return one_indrect_array[i];
+            } else {
+                return type == FT_FILE ? FILE_BUT_DIR : DIR_BUT_FILE;
+            }
+        }
+    }
+
+    /* 在直接索引和一级间接索引均未找到 */
     return FAIL;
     
 }
