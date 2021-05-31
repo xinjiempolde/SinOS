@@ -31,6 +31,7 @@ struct path_node {
 
 void init_sb(super_block* sb);
 void init_fs(bool value);
+void init_group();
 int read_all_files(dir_entry* directory, dir_entry argv[]);
 
 void write_dir_entry(dir_entry* dir, int offset);

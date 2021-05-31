@@ -200,8 +200,11 @@ void zero_dir(int id) {
     dir_entry empty_dir;
     memset((uint8_t*)&empty_dir, sizeof(dir_entry));
 
+    int offset = id / sb.dirnum_per_sec; // 指定目录项的扇区偏移
+    int sec_id = sb.dir_entry_lba + offset;
+
     /* 将目录写入到对应的磁盘中 */
-    ata_read(&disks.bus_array[2], sb.dir_entry_lba, sector, 512);
-    ((dir_entry*)sector)[id] = empty_dir;
-    ata_write(&disks.bus_array[2], sb.dir_entry_lba, sector, 512);
+    ata_read(&disks.bus_array[2], sec_id, sector, 512);
+    ((dir_entry*)sector)[id % sb.dirnum_per_sec] = empty_dir;
+    ata_write(&disks.bus_array[2], sec_id, sector, 512);
 }

@@ -1,0 +1,114 @@
+Date : 2021-05-29 11:43:37
+Directory : /home/singheart/projects/hariOS
+Total : 70 files,  3700 codes, 473 comments, 731 blanks, all 4904 lines
+
+Languages
++----------+------------+------------+------------+------------+------------+
+| language | files      | code       | comment    | blank      | total      |
++----------+------------+------------+------------+------------+------------+
+| C        |         26 |      2,218 |        285 |        408 |      2,911 |
+| C++      |         30 |        730 |         45 |        156 |        931 |
+| nasm     |         13 |        705 |        143 |        155 |      1,003 |
+| Makefile |          1 |         47 |          0 |         12 |         59 |
++----------+------------+------------+------------+------------+------------+
+
+Directories
++--------------------------------------------------------------+------------+------------+------------+------------+------------+
+| path                                                         | files      | code       | comment    | blank      | total      |
++--------------------------------------------------------------+------------+------------+------------+------------+------------+
+| .                                                            |         70 |      3,700 |        473 |        731 |      4,904 |
+| boot                                                         |         10 |        461 |         83 |         95 |        639 |
+| boot/include                                                 |          2 |         36 |          8 |          7 |         51 |
+| cpu                                                          |          6 |        482 |        101 |         98 |        681 |
+| drivers                                                      |          4 |        340 |         60 |         55 |        455 |
+| fs                                                           |          3 |        407 |         56 |        103 |        566 |
+| gui                                                          |          6 |        762 |         55 |        119 |        936 |
+| include                                                      |         30 |        730 |         45 |        156 |        931 |
+| include/cpu                                                  |          6 |        156 |         16 |         38 |        210 |
+| include/drivers                                              |          5 |        202 |          4 |         18 |        224 |
+| include/fs                                                   |          4 |        114 |         17 |         37 |        168 |
+| include/gui                                                  |          6 |        147 |          3 |         37 |        187 |
+| include/kernel                                               |          4 |         52 |          1 |         13 |         66 |
+| include/libc                                                 |          4 |         35 |          1 |          5 |         41 |
+| include/mm                                                   |          1 |         24 |          3 |          8 |         35 |
+| kernel                                                       |          5 |        171 |         15 |         34 |        220 |
+| libc                                                         |          3 |        148 |         13 |         27 |        188 |
+| mm                                                           |          2 |        152 |         45 |         32 |        229 |
++--------------------------------------------------------------+------------+------------+------------+------------+------------+
+
+Files
++--------------------------------------------------------------+----------+------------+------------+------------+------------+
+| filename                                                     | language | code       | comment    | blank      | total      |
++--------------------------------------------------------------+----------+------------+------------+------------+------------+
+| /home/singheart/projects/hariOS/Makefile                     | Makefile |         47 |          0 |         12 |         59 |
+| /home/singheart/projects/hariOS/boot/32bit_gdt.asm           | nasm     |         23 |          1 |          4 |         28 |
+| /home/singheart/projects/hariOS/boot/32bit_switch.asm        | nasm     |         19 |          0 |          2 |         21 |
+| /home/singheart/projects/hariOS/boot/bootsect.asm            | nasm     |         74 |          6 |         12 |         92 |
+| /home/singheart/projects/hariOS/boot/disk.asm                | nasm     |         63 |         13 |         14 |         90 |
+| /home/singheart/projects/hariOS/boot/include/const_value.inc | nasm     |         15 |          4 |          5 |         24 |
+| /home/singheart/projects/hariOS/boot/include/fat12hdr.inc    | nasm     |         21 |          4 |          2 |         27 |
+| /home/singheart/projects/hariOS/boot/kernel_entry.asm        | nasm     |          6 |          0 |          0 |          6 |
+| /home/singheart/projects/hariOS/boot/loader.asm              | nasm     |         60 |          3 |          9 |         72 |
+| /home/singheart/projects/hariOS/boot/print.asm               | nasm     |         49 |         13 |         23 |         85 |
+| /home/singheart/projects/hariOS/boot/switch_graphic_mode.asm | nasm     |        131 |         39 |         24 |        194 |
+| /home/singheart/projects/hariOS/cpu/gdt.c                    | C        |         19 |          3 |          7 |         29 |
+| /home/singheart/projects/hariOS/cpu/idt.c                    | C        |         15 |         11 |          1 |         27 |
+| /home/singheart/projects/hariOS/cpu/interrupts.asm           | nasm     |        207 |         42 |         48 |        297 |
+| /home/singheart/projects/hariOS/cpu/isr.c                    | C        |        124 |          9 |         17 |        150 |
+| /home/singheart/projects/hariOS/cpu/register.c               | C        |         20 |          6 |          4 |         30 |
+| /home/singheart/projects/hariOS/cpu/timer.c                  | C        |         97 |         30 |         21 |        148 |
+| /home/singheart/projects/hariOS/drivers/ata.c                | C        |        138 |         16 |         27 |        181 |
+| /home/singheart/projects/hariOS/drivers/keyboard.c           | C        |         66 |          5 |          5 |         76 |
+| /home/singheart/projects/hariOS/drivers/mouse.c              | C        |        111 |         23 |         18 |        152 |
+| /home/singheart/projects/hariOS/drivers/ports.c              | C        |         25 |         16 |          5 |         46 |
+| /home/singheart/projects/hariOS/fs/dir.c                     | C        |        149 |         20 |         33 |        202 |
+| /home/singheart/projects/hariOS/fs/fs.c                      | C        |        206 |         33 |         62 |        301 |
+| /home/singheart/projects/hariOS/fs/inode.c                   | C        |         52 |          3 |          8 |         63 |
+| /home/singheart/projects/hariOS/gui/background.c             | C        |         13 |          0 |          2 |         15 |
+| /home/singheart/projects/hariOS/gui/console.c                | C        |        244 |         12 |         38 |        294 |
+| /home/singheart/projects/hariOS/gui/gedit.c                  | C        |        127 |          7 |         27 |        161 |
+| /home/singheart/projects/hariOS/gui/layer.c                  | C        |        203 |         25 |         37 |        265 |
+| /home/singheart/projects/hariOS/gui/vga.c                    | C        |        128 |          9 |         14 |        151 |
+| /home/singheart/projects/hariOS/gui/window.c                 | C        |         47 |          2 |          1 |         50 |
+| /home/singheart/projects/hariOS/include/cpu/gdt.h            | C++      |         19 |          0 |          6 |         25 |
+| /home/singheart/projects/hariOS/include/cpu/idt.h            | C++      |         20 |          2 |          7 |         29 |
+| /home/singheart/projects/hariOS/include/cpu/isr.h            | C++      |         60 |         12 |          7 |         79 |
+| /home/singheart/projects/hariOS/include/cpu/register.h       | C++      |         10 |          0 |          4 |         14 |
+| /home/singheart/projects/hariOS/include/cpu/timer.h          | C++      |         28 |          2 |          8 |         38 |
+| /home/singheart/projects/hariOS/include/cpu/type.h           | C++      |         19 |          0 |          6 |         25 |
+| /home/singheart/projects/hariOS/include/drivers/ata.h        | C++      |         38 |          0 |          7 |         45 |
+| /home/singheart/projects/hariOS/include/drivers/font16.h     | C++      |        132 |          4 |          2 |        138 |
+| /home/singheart/projects/hariOS/include/drivers/keyboard.h   | C++      |         10 |          0 |          1 |         11 |
+| /home/singheart/projects/hariOS/include/drivers/mouse.h      | C++      |         15 |          0 |          4 |         19 |
+| /home/singheart/projects/hariOS/include/drivers/ports.h      | C++      |          7 |          0 |          4 |         11 |
+| /home/singheart/projects/hariOS/include/fs/dir.h             | C++      |         29 |          2 |          7 |         38 |
+| /home/singheart/projects/hariOS/include/fs/fs.h              | C++      |         39 |          3 |         13 |         55 |
+| /home/singheart/projects/hariOS/include/fs/inode.h           | C++      |         22 |         11 |          8 |         41 |
+| /home/singheart/projects/hariOS/include/fs/super_block.h     | C++      |         24 |          1 |          9 |         34 |
+| /home/singheart/projects/hariOS/include/gui/background.h     | C++      |          5 |          0 |          2 |          7 |
+| /home/singheart/projects/hariOS/include/gui/console.h        | C++      |         27 |          0 |          9 |         36 |
+| /home/singheart/projects/hariOS/include/gui/gedit.h          | C++      |         25 |          0 |          6 |         31 |
+| /home/singheart/projects/hariOS/include/gui/layer.h          | C++      |         38 |          1 |          6 |         45 |
+| /home/singheart/projects/hariOS/include/gui/vga.h            | C++      |         46 |          2 |         12 |         60 |
+| /home/singheart/projects/hariOS/include/gui/window.h         | C++      |          6 |          0 |          2 |          8 |
+| /home/singheart/projects/hariOS/include/kernel/kernel.h      | C++      |          3 |          0 |          1 |          4 |
+| /home/singheart/projects/hariOS/include/kernel/pci.h         | C++      |          9 |          0 |          3 |         12 |
+| /home/singheart/projects/hariOS/include/kernel/task.h        | C++      |         30 |          1 |          7 |         38 |
+| /home/singheart/projects/hariOS/include/kernel/thread.h      | C++      |         10 |          0 |          2 |         12 |
+| /home/singheart/projects/hariOS/include/libc/function.h      | C++      |          4 |          0 |          1 |          5 |
+| /home/singheart/projects/hariOS/include/libc/math.h          | C++      |          9 |          1 |          1 |         11 |
+| /home/singheart/projects/hariOS/include/libc/mem.h           | C++      |          8 |          0 |          1 |          9 |
+| /home/singheart/projects/hariOS/include/libc/string.h        | C++      |         14 |          0 |          2 |         16 |
+| /home/singheart/projects/hariOS/include/mm/memory.h          | C++      |         24 |          3 |          8 |         35 |
+| /home/singheart/projects/hariOS/kernel/asm_func.asm          | nasm     |         10 |          5 |          2 |         17 |
+| /home/singheart/projects/hariOS/kernel/kernel.c              | C        |         64 |          2 |         12 |         78 |
+| /home/singheart/projects/hariOS/kernel/pci.c                 | C        |         23 |          1 |          4 |         28 |
+| /home/singheart/projects/hariOS/kernel/task.c                | C        |         74 |          7 |         15 |         96 |
+| /home/singheart/projects/hariOS/kernel/thread.c              | C        |          0 |          0 |          1 |          1 |
+| /home/singheart/projects/hariOS/libc/math.c                  | C        |          0 |          0 |          1 |          1 |
+| /home/singheart/projects/hariOS/libc/mem.c                   | C        |         22 |          1 |          2 |         25 |
+| /home/singheart/projects/hariOS/libc/string.c                | C        |        126 |         12 |         24 |        162 |
+| /home/singheart/projects/hariOS/mm/cache.asm                 | nasm     |         27 |         13 |         10 |         50 |
+| /home/singheart/projects/hariOS/mm/memory.c                  | C        |        125 |         32 |         22 |        179 |
+| Total                                                        |          |      3,700 |        473 |        731 |      4,904 |
++--------------------------------------------------------------+----------+------------+------------+------------+------------+

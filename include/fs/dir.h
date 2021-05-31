@@ -19,7 +19,7 @@
 
 
 /* 目录项结构 */
-/* 凑了凑变成32字节，不要问我为什么，不对齐16字节看16进制太难受了 */
+/* 凑了凑变成32字节,便于查看二进制debug */
 typedef struct {
    char filename[MAX_FILE_NAME_LEN];  // 普通文件或目录名称
    uint32_t i_no;		      // 普通文件或目录对应的inode编号

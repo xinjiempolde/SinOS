@@ -22,10 +22,8 @@ void init_sb(super_block* sb) {
     sb->sec_cnt = 0x400000; // 80M
     sb->inode_cnt = 0x4000; // 4K, 最多4096个文件
 
-    sb->block_bitmap_lba = 1; // 空闲块扇区位图的起始lba
-    sb->block_bitmap_sects = 20; // 空闲块扇区位图所占的扇区数量
 
-    sb->inode_bitmap_lba = sb->block_bitmap_lba + sb->block_bitmap_sects; // inode位图的起始lba,21
+    sb->inode_bitmap_lba = 2; // inode位图的起始lba,21
     sb->inode_bitmap_sects = 1; // inode位图所占扇区数量
 
     sb->inode_table_lba = sb->inode_bitmap_lba + sb->inode_bitmap_sects; // inode数组的起始lba, 22
@@ -34,8 +32,39 @@ void init_sb(super_block* sb) {
 
     sb->dir_entry_lba = sb->inode_table_lba + sb->inode_table_sects; // 根目录区的起始lba, 534
     sb->dir_entry_secs = (sb->inode_cnt * sizeof(dir_entry)) / 512; // 根目录区所占有的扇区数, 256个扇区
+    sb->dirnum_per_sec = 512 / sizeof(dir_entry); // 一个扇区有多少个目录项
 
     sb->data_start_lba = sb->dir_entry_lba + sb->dir_entry_secs; // 数据区的起始地址
+
+    sb->free[0] = 100;
+    int i;
+    for (i = 1; i < NGROUP+1; i++) {
+        sb->free[i] = sb->data_start_lba + NGROUP - i;
+    }
+}
+
+/**
+ * 功能：初始化成组链接的组，假定超级块中的组已初始化
+ */
+void init_group() {
+    int i;
+    int leader_sec_id = sb.free[1]; // 组长块的扇区ID
+    int free_start_sec_id = leader_sec_id + 1; // 下一个空闲块的编号
+    GroupStack data;
+    data.free[0] = 100;
+
+    while (1) {
+        for (i = 1; i < NGROUP+1; i++) {
+            data.free[i] = free_start_sec_id + NGROUP - i;
+        }
+        ata_write(&disks.bus_array[2], leader_sec_id, (uint8_t*)&data, 512);
+        leader_sec_id = data.free[1];
+        free_start_sec_id = leader_sec_id + 1;
+
+        if (leader_sec_id > 4000) {
+            break;
+        }
+    }
 }
 
 /**
@@ -46,21 +75,20 @@ void init_fs(bool value) {
     unsigned int i;
 
     init_all_disk(&disks);
-    ata_read(&disks.bus_array[2], 0, (uint8_t*)&sb, 512);
+    ata_read(&disks.bus_array[2], SB_LBA, (uint8_t*)&sb, 512);
     if (sb.magic == 0x66 && !value) {
         return; // 已经有文件系统了，不需要初始化
     }
     
     init_sb(&sb);
+    init_group();
 
-    ata_write(&disks.bus_array[2], 0, (uint8_t*)&sb, 512);
+    /* 写入超级块 */
+    ata_write(&disks.bus_array[2], SB_LBA, (uint8_t*)&sb, 512);
 
-    /* 写入空闲块位图 */   
+
     uint8_t zero[512];
     memset(zero, 512);
-    for (i = sb.block_bitmap_lba; i < sb.block_bitmap_lba + sb.block_bitmap_sects; i++) { // 一个扇区的空闲块位图可以控制512K的磁盘大小,暂且先试试10M
-        ata_write(&disks.bus_array[2], i, zero, 512);
-    } 
 
     /* 写入inode位图 */
     ata_write(&disks.bus_array[2], sb.inode_bitmap_lba, zero, 512); // 一个inode位图扇区可以代表4096个inode，先设置一个扇区再说
@@ -217,37 +245,37 @@ int read_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes)
 }
 
 
-// 先测试512个扇区
+// 需要进行修改
 int alloc_content_block() {
-    uint8_t sector[512];
-    int i, j;
-    uint8_t mask;
-    ata_read(&disks.bus_array[2], sb.block_bitmap_lba, sector, 512);
-    for (i = 0; i < 512; i++) {
-        mask = 0x80;
-        for (j = 0; j < 8; j++) {
-            if ((sector[i] & mask) == 0) {
-                sector[i] |= mask;
-                ata_write(&disks.bus_array[2], sb.block_bitmap_lba, sector, 512);
-                return (8 * i + j) + sb.data_start_lba; // 返回磁盘块的编号
-            }
-            mask = mask >> 1;
+    int r;
+    if (sb.free[0] == 1) {
+        if (sb.free[1] == 0) {
+            printf("分配失败，请等待");
+        } else {
+            r = sb.free[1];
+            ata_write(&disks.bus_array[2], r, (uint8_t*)sb.free, sizeof(uint32_t) * (NGROUP+1));
+            return r;
         }
+    } else {
+        r = sb.free[sb.free[0]];
+        sb.free[0]--;
+        return r;
     }
-    
-    return -1; // 分配失败
+
+    ata_write(&disks.bus_array[2], SB_LBA, (uint8_t*)&sb, 512);
 }
 
+/* 需要进行修改 */
 void free_conten_block(int block_id) {
-    uint8_t sector[512];
-    int sec_cnt = block_id / 512; // 扇区数量的偏移
-    int byte_cnt = (block_id % 512) / 8; // 在字节间的偏移
-    int off_byte = block_id % 8; // 在字节内的偏移
-    uint8_t mask = (0x80 >> off_byte) ^ 0xff;
-    ata_read(&disks.bus_array[2], sb.block_bitmap_lba + sec_cnt, sector, 512);
-
-    sector[byte_cnt] &= mask;
-    ata_write(&disks.bus_array[2], sb.block_bitmap_lba + sec_cnt, sector, 512);
+    if (sb.free[0] == 100) {
+        GroupStack data;
+        memory_copy((uint8_t*)sb.free, (uint8_t*)&data, sizeof(uint32_t) * (NGROUP+1));
+        ata_write(&disks.bus_array[2], block_id, (uint8_t*)&data, 512);
+    } else {
+        sb.free[0]++;
+        sb.free[sb.free[0]] = block_id;
+        ata_write(&disks.bus_array[2], SB_LBA, (uint8_t*)&sb, 512);
+    }
 }
 
 /* 向后切换路径 */
