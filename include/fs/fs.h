@@ -16,6 +16,8 @@
 #define FT_UNDIFINE 0x00   // 未定义的类型
 #define FT_FILE 0x01       // 普通的文件
 #define FT_DIRECOTRY 0x02  // 目录
+#define FT_SLINK 0x03      // 软连接
+#define FT_HLINK 0x04      // 硬链接
 #endif
 
 /* 双向链表，用于路径切换 */
@@ -28,7 +30,7 @@ struct path_node {
 };
 
 void init_sb(super_block* sb);
-void init_fs(void);
+void init_fs(bool value);
 int read_all_files(dir_entry* directory, dir_entry argv[]);
 
 void write_dir_entry(dir_entry* dir, int offset);

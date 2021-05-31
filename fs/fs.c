@@ -41,13 +41,13 @@ void init_sb(super_block* sb) {
 /**
  * 初始化文件系统
  */
-void init_fs() {
+void init_fs(bool value) {
 
     unsigned int i;
 
     init_all_disk(&disks);
     ata_read(&disks.bus_array[2], 0, (uint8_t*)&sb, 512);
-    if (sb.magic == 0x66) {
+    if (sb.magic == 0x66 && !value) {
         return; // 已经有文件系统了，不需要初始化
     }
     
@@ -91,18 +91,37 @@ void init_fs() {
 
 /* 显示指定目录区存在的所有文件, 保存到argv字符串数组中，返回文件个数 */
 int read_all_files(dir_entry* cur_dir, dir_entry argv[]) {
-    int i;
+    int i, j;
     dir_entry* directory = (dir_entry*)mem_alloc_4k((MemMan*)MEM_MAN_ADDR, sb.inode_cnt * sizeof(dir_entry));
     inode cur_inode; // 当前目录对应的inode
     open_inode(cur_dir->i_no, &cur_inode);
-    for (i = 0; i < 14; i++) {
+    for (i = 0; i < DIRECT_BLOCK_NUM; i++) {
         if (cur_inode.i_sectors[i] == 0) {
             break;
         }
         open_dir(cur_inode.i_sectors[i], directory);
         strcp(directory->filename, (char*)&(argv[i].filename), strlen(directory->filename));
         argv[i].f_type = directory->f_type;
+        argv[i].i_no = cur_inode.i_sectors[i];
     }
+
+    if (cur_inode.i_sectors[ONE_INDIRECT_ID] == 0) {    // 文件的数量还不足以使用一级间接索引
+        return i;
+    }
+
+    int one_indirect_sec[128] = {0};
+    ata_read(&disks.bus_array[2], cur_inode.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_sec, 512);
+    for (j = 0; j < 128; j++) {
+        if (one_indirect_sec[j] == 0) {
+            break;
+        }
+        open_dir(one_indirect_sec[j], directory);
+        strcp(directory->filename, (char*)&(argv[i].filename), strlen(directory->filename));
+        argv[i].f_type = directory->f_type;
+        argv[i].i_no = one_indirect_sec[j];
+        i++;
+    }
+
     return i;
 }
 
@@ -151,7 +170,7 @@ void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbyt
         cur_inode.i_sectors[i] = block_no;
 
         memory_copy(content + i * 512, block_sector, 512);
-        ata_write(&disks.bus_array[2], sb.data_start_lba + block_no, (uint8_t*)block_sector ,512);
+        ata_write(&disks.bus_array[2], block_no, (uint8_t*)block_sector ,512);
     }
 
     // 不足512字节的扇区
@@ -159,7 +178,7 @@ void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbyt
     cur_inode.i_sectors[nbytes / 512] = block_no;
     memset(block_sector, 512);
     memory_copy(content + (nbytes / 512) * 512, block_sector, nbytes % 512);
-    ata_write(&disks.bus_array[2], sb.data_start_lba + block_no, block_sector, 512);
+    ata_write(&disks.bus_array[2], block_no, block_sector, 512);
 
     cur_inode.i_no = file.i_no;
     cur_inode.i_size = nbytes; // 创建文件的文件大小
@@ -191,9 +210,9 @@ int read_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes)
 
 
     for (i = 0; i < real_bytes / 512; i++) { // 先读取够512字节的
-        ata_read(&disks.bus_array[2], sb.data_start_lba + cur_inode.i_sectors[i], content + 512 * i, 512);
+        ata_read(&disks.bus_array[2], cur_inode.i_sectors[i], content + 512 * i, 512);
     }
-    ata_read(&disks.bus_array[2], sb.data_start_lba + cur_inode.i_sectors[i], content + 512 * i, real_bytes % 512); // 不够512字节的扇区
+    ata_read(&disks.bus_array[2], cur_inode.i_sectors[i], content + 512 * i, real_bytes % 512); // 不够512字节的扇区
     return SUCCESS;
 }
 
@@ -210,7 +229,7 @@ int alloc_content_block() {
             if ((sector[i] & mask) == 0) {
                 sector[i] |= mask;
                 ata_write(&disks.bus_array[2], sb.block_bitmap_lba, sector, 512);
-                return 8 * i + j; // 返回第几个block_bitmap
+                return (8 * i + j) + sb.data_start_lba; // 返回磁盘块的编号
             }
             mask = mask >> 1;
         }

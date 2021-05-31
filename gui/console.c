@@ -101,7 +101,6 @@ void console_run() {
 
                 put_str_refresh(console_layer, cursorX, cursorY, full_path, BRIGHT_RED);
                 cursorX += CHAR_W * strlen(full_path);
-
                 put_char_refresh(console_layer, cursorX, cursorY, '#', BRIGHT_GREEN);                    
                 cursorX += 2*CHAR_W;
 
@@ -149,8 +148,10 @@ void parse_cmd(char* cmd_str) {
         cursorX = DFT_CSL_BOR;
         cursorY = DFT_CSL_TIT_H;
     } else if (strcmp(argv[0],"ls") == 0) {
-        dir_entry file_array[14]; // 一个路径下最多14个文件，文件名最长15个字符
+        dir_entry file_array[141]; // 一个路径下最多13+128个文件，文件名最长15个字符
         int file_num = read_all_files(&cur_dir, file_array);
+
+        printf("file_num: %d", file_num);
         for (i = 0; i < file_num; i++) {
             if (file_array[i].f_type == FT_DIRECOTRY) {
                 console_print(BRIGHT_BLUE, "%s ", file_array[i].filename);
@@ -199,8 +200,12 @@ void parse_cmd(char* cmd_str) {
         create_file(cur_dir.i_no ,argv[3], (uint8_t*)(argv[1]), strlen(argv[1]));
     } else if (strcmp(argv[0], "rm") == 0) {
         rm_dir_by_name(argv[1], cur_dir.i_no, FT_FILE);
+    } else if (strcmp(argv[0], "rmdir") == 0) {
+        rm_dir_by_name(argv[1], cur_dir.i_no, FT_DIRECOTRY);
     } else if (strcmp(argv[0], "gedit") == 0) {
         cmd_gedit(argv);
+    } else if (strcmp(argv[0], "format") == 0) {
+        init_fs(TRUE);
     } else {
         put_str_refresh(console_layer, cursorX, cursorY, "command not found", WHITE);
         cursorY = console_newline(console_layer, cursorY);

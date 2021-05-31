@@ -8,6 +8,8 @@
 #define FT_UNDIFINE 0x00   // 未定义的类型
 #define FT_FILE 0x01       // 普通的文件
 #define FT_DIRECOTRY 0x02  // 目录
+#define FT_SLINK 0x03      // 软链接
+#define FT_HLINK 0x04      // 硬链接
 #endif
 
 #define SUCCESS 0 // 成功找到了对应类型的目录项

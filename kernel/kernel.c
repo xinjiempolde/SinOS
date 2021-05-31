@@ -51,12 +51,7 @@ void kernel_main() {
 
     task_init();
 
-    init_sb(&sb);
-    if (sb.magic != 0x66) {
-        init_fs();
-    }
-
-    init_fs();
+    init_fs(FALSE);
     
     Task* mytask = task_alloc();
     mytask->tss.EIP = (uint32_t)(&console_task);
