@@ -5,9 +5,12 @@
 #include <fs/fs.h>
 #include <libc/mem.h>
 #include <gui/vga.h>
+#include <mm/memory.h>
 #include <libc/string.h>
+extern dir_entry cur_dir; // 当前所在的目录的目录项
 extern disk_array disks;
 extern super_block sb;
+static MemMan* memMan = (MemMan*)MEM_MAN_ADDR;
 
 void save_dir(dir_entry* dir) {
     uint8_t sector[512];
@@ -37,10 +40,12 @@ int create_dir(char* dir_name, int parent_no) {
     int i;
     int one_indirect_sec[128] = {0};  // 缓存一级间接寻址扇区，能存储128个int类型的inode编号
     
-    if (search_dir_by_id(dir_name, parent_no, FT_DIRECOTRY) != FAIL) { // 该目录已存在
-        printf("该目录已经存在");
+    dir_entry* tmp = search_dir_by_id(dir_name, parent_no);
+    if (tmp != NULL) { // 该目录已存在
+        printf("该文件或目录已经存在");
         return FAIL;
     }
+    //mem_free_4k(memMan, (uint32_t)tmp, sizeof(dir_entry));
     
     memset((uint8_t*)&diretory, sizeof(diretory)); // 清0， 防止栈中残留的脏数据
 
@@ -96,25 +101,21 @@ int create_dir(char* dir_name, int parent_no) {
 }
 
 /**
- * 在目录下搜索指定名称的目录项，如果找到，返回inode编号，否则返回-1
- * type有两种值，要么为文件类型，要么为目录类型
+ * 在目录下搜索指定名称的目录项，如果找到，返回目录项dir_entry
+ * 若没有找到，返回NULL
  */
-int search_dir(char* dir_name, dir_entry* current_directory, int type) {
+dir_entry* search_dir(char* dir_name, dir_entry* current_directory) {
     inode parent_inode;
-    dir_entry sub_dir;
+    dir_entry* sub_dir = (dir_entry*)mem_alloc_4k(memMan, sizeof(dir_entry));
     int i;
     open_inode(current_directory->i_no, &parent_inode);
     for (i = 0; i < DIRECT_BLOCK_NUM; i++) {    // 现从直接索引数组中找inode
         if (parent_inode.i_sectors[i] == 0) {   // 到此处表明已经不寻找inode了，该目录下没有该(目录)文件
-            return FAIL;
+            return NULL;
         }
-        open_dir(parent_inode.i_sectors[i], &sub_dir);
-        if (strcmp(dir_name, sub_dir.filename) == 0) {
-            if (sub_dir.f_type == type) {
-                return parent_inode.i_sectors[i];
-            } else {
-                return type == FT_FILE? FILE_BUT_DIR : DIR_BUT_FILE;
-            }
+        open_dir(parent_inode.i_sectors[i], sub_dir);
+        if (strcmp(dir_name, sub_dir->filename) == 0) {
+            return sub_dir; // 只要名字一样，不管类型，直接返回dir_entry;
         }
     }
 
@@ -123,38 +124,74 @@ int search_dir(char* dir_name, dir_entry* current_directory, int type) {
     ata_read(&disks.bus_array[2], parent_inode.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indrect_array, 512);
     for (i = 0; i < 128; i++) {
         if (one_indrect_array[i] == 0) {
-            return FAIL;        // 在一级间接寻址中找不到
+            return NULL;        // 在一级间接寻址中找不到
         }
-        open_dir(one_indrect_array[i], &sub_dir);
-        if (strcmp(dir_name, sub_dir.filename) == 0) {
-            if (sub_dir.f_type == type) {
-                return one_indrect_array[i];
-            } else {
-                return type == FT_FILE ? FILE_BUT_DIR : DIR_BUT_FILE;
-            }
+        open_dir(one_indrect_array[i], sub_dir);
+        if (strcmp(dir_name, sub_dir->filename) == 0) {
+            return sub_dir;
         }
     }
 
     /* 在直接索引和一级间接索引均未找到 */
-    return FAIL;
+    return NULL;
     
 }
 
-int search_dir_by_id(char* dir_name, int parent_inode_id, int type) {
+dir_entry* search_dir_by_id(char* dir_name, int parent_inode_id) {
     dir_entry parent;
     open_dir(parent_inode_id, &parent);
 
-    return search_dir(dir_name, &parent, type);
+    return search_dir(dir_name, &parent);
+}
+
+/**
+ * 功能:解析目录项的全路径，如果找到返回对应的目录项，没找到返回NULL
+ */
+dir_entry* parse_full_path(char* full_path) {
+    if (strlen(full_path) <= 0) return NULL;
+
+    int i;
+    char* argv[10] = {NULL};
+    int current_i;
+
+    str_split(full_path, (char**)argv, '/');
+
+    int listLen = str_list_len(argv, 10);
+    dir_entry* tmp_dir;
+
+    if (full_path[0] == '/') { // 从根目录开始解析
+        current_i = ROOT_INODE_ID;
+    } else { // 从当前目录开始解析
+        current_i = cur_dir.i_no;
+    }
+
+    // 前面的参数均为目录，最后一个参数可能为目录，可能为文件
+    for (i = 0; i < listLen - 1; i++) {
+        tmp_dir = search_dir_by_id(argv[i], current_i);
+        if (tmp_dir == NULL || tmp_dir->f_type != FT_DIRECOTRY) {
+            return NULL;
+        }
+        current_i = tmp_dir->i_no;
+    }
+    tmp_dir = search_dir_by_id(argv[listLen-1], current_i);
+    if (tmp_dir == NULL) {
+        return NULL;
+    }
+    return tmp_dir;
 }
 
 /**
  * 删除目录下的一个目录项，parent_no为父目录的inode_id
  */
 int rm_dir_by_name(char* rm_dir_name, int parent_no, int type) {
-    int rm_inode_id =  search_dir_by_id(rm_dir_name, parent_no, type);
-    if (rm_inode_id == FAIL || rm_inode_id == FILE_BUT_DIR || rm_inode_id == DIR_BUT_FILE) {
-        return rm_inode_id;
+    dir_entry* rm_dir = search_dir_by_id(rm_dir_name, parent_no);
+    int rm_inode_id;
+    if (rm_dir == NULL) {
+        return FAIL;
+    } else if (rm_dir->f_type != type){
+        return FILE_BUT_DIR;
     }
+    rm_inode_id = rm_dir->i_no;
     return rm_dir_by_id(rm_inode_id, parent_no, type);
 }
 

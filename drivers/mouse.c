@@ -95,15 +95,26 @@ static void mouse_callback(registers_t r) {
         if (m_info.y < 0) m_info.y = 0;
         if (m_info.y >= bootInfo->screen_h-1) m_info.y = bootInfo->screen_h-1;
         move_layer(mouse_layer, m_info.x, m_info.y);
+
+        int x, y;
         if (buffer[0] & LEFT_BTN_ON) {
             if (!readable && in_rect(gedit_layer->x, gedit_layer->y, gedit_layer->weight, gedit_layer->height, m_info.x, m_info.y)){
                 if (in_rect(gedit_layer->x+gedit_layer->weight-21, gedit_layer->y, 16, 16, m_info.x, m_info.y)) {
                     readable = TRUE;
                 } else {
-                    move_layer(gedit_layer, gedit_layer->x+span.x, gedit_layer->y+span.y);
+                    x = gedit_layer->x + span.x;
+                    y = gedit_layer->y + span.y;
+                    if (x < 0) x = 0;
+                    if (y < 0) y = 0;
+                    move_layer(gedit_layer, x, y);
                 }
             } else if (readable && in_rect(console_layer->x, console_layer->y, console_layer->weight, console_layer->height, m_info.x, m_info.y)) {
-                move_layer(console_layer, console_layer->x+span.x, console_layer->y+span.y);
+                x = console_layer->x + span.x;
+                y = console_layer->y + span.y;
+                if (x < 0) x = 0;
+                if (y < 0) y = 0;
+
+                move_layer(console_layer, x, y);
             }
         }
     }

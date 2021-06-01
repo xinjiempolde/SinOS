@@ -140,7 +140,7 @@ void parse_cmd(char* cmd_str) {
 
     /* memory command */
     if (strcmp(argv[0], "mem") == 0) {
-        console_printfn("total:    %dMB", mem_check(0x200000, 0x8000000) / (1024*1024));
+        console_printfn("total:    %dMB", 128);
         console_printfn("free:     %dMB", mem_total(memMan) / (1024*1024));
     /* command not found */
     } else if (strcmp(argv[0], "clear") == 0) {
@@ -166,7 +166,7 @@ void parse_cmd(char* cmd_str) {
         init_pcilist();
     } else if (strcmp(argv[0], "cat") == 0){ // 需要进行修改
         uint8_t sector[512] = {0};
-        int status = read_file(cur_dir.i_no, argv[1], sector, 512);
+        int status = read_file(argv[1], sector, 512);
         if (status == FILE_BUT_DIR) {
             console_printfn("%s is a directory!", argv[1]);
         } else if (status == FAIL) {
@@ -180,20 +180,18 @@ void parse_cmd(char* cmd_str) {
             console_printfn("%s has exist", argv[1]);
         }
     } else if (strcmp(argv[0], "cd") == 0) {
-        int inode_id;
         if (strcmp(argv[1], "../") == 0) { // 返回上一级目录
             switch_backward();
         } else {
-            inode_id = search_dir(argv[1], &cur_dir, FT_DIRECOTRY); // 在当前目录寻找
-            if (inode_id == DIR_BUT_FILE) {
-                console_printfn("%s is a file!", argv[1]);
-            } else if (inode_id == FAIL) {
+            dir_entry* dir = parse_full_path(argv[1]);
+            if (dir == NULL) {
                 console_printfn("directory %s doesn't exist", argv[1]);
+            } else if (dir->f_type != FT_DIRECOTRY) {
+                console_printfn("%s is not a directory!", argv[1]);
             } else {
-                dir_entry next_dir;
-                open_dir(inode_id, &next_dir);
-                switch_forward(&next_dir);
+                switch_full_path(argv[1]);
             }
+            //mem_free_4k(memMan, (uint32_t)dir, sizeof(dir_entry));
         }
 
     } else if (strcmp(argv[0], "echo") == 0) {
@@ -206,6 +204,12 @@ void parse_cmd(char* cmd_str) {
         cmd_gedit(argv);
     } else if (strcmp(argv[0], "format") == 0) {
         init_fs(TRUE);
+    } else if (strcmp(argv[0], "ln") == 0) {
+        dir_entry* dir = parse_full_path(argv[1]);
+        if (dir == NULL) {
+            console_printfn("%s doesn't exists", argv[1]);
+        }
+        printf("%s", dir->filename);
     } else {
         put_str_refresh(console_layer, cursorX, cursorY, "command not found", WHITE);
         cursorY = console_newline(console_layer, cursorY);
@@ -281,7 +285,7 @@ void cmd_gedit(char** argv) {
         return;
     }
 
-    if (search_dir_by_id(argv[1], cur_dir.i_no, FT_FILE) != FAIL) {
+    if (search_dir_by_id(argv[1], cur_dir.i_no) != NULL) {
         console_printfn("%s has exists!", argv[1]);
         return;
     }

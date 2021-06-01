@@ -1,5 +1,8 @@
 #include <libc/string.h>
 #include <gui/vga.h>
+#include <mm/memory.h>
+#include <libc/mem.h>
+static MemMan* memMan = (MemMan*)MEM_MAN_ADDR;
 /**
  * unsigned int converts to decimal number
  * return the number of digits
@@ -52,6 +55,19 @@ int strlen(char* s) {
     int i = 0;
     while (s[i] != '\0') {
         i++;
+    }
+    return i;
+}
+
+/**
+ * 功能：返回字符串数组的长度
+ */
+int str_list_len(char** argv, int maxLen) {
+    int i;
+    for (i = 0; i < maxLen; i++) {
+        if (argv[i] == NULL) {
+            break;
+        }
     }
     return i;
 }
@@ -127,9 +143,15 @@ void strcp(char* src, char* dst, unsigned int nbytes) {
 /* 按指定字符分隔字符串，结果保存到argv中，返回子串数量 */
 int str_split(char* string, char** argv, char token) {
     int argc = 0; // 子串的数量
-    char* substring = string; // 子串
-
+    char* substring = (char*)mem_alloc_4k(memMan, sizeof(char)*(strlen(string)+1)); // 子串
+    memory_copy((uint8_t*)string, (uint8_t*)substring, strlen(string)+1);
     while (*substring) {
+
+        /* 跳过字符串中连续token */
+        while (*substring == token) {
+            substring++;
+        }
+
         argv[argc] = substring;
 
         if (*substring == '\"') { // 保护"this is a test"双引号中的空格分隔
@@ -158,5 +180,6 @@ int str_split(char* string, char** argv, char token) {
         argc++;
     }
 
+    //mem_free_4k(memMan, (uint32_t)substring, sizeof(char)*(strlen(string)+1));
     return argc;
 }

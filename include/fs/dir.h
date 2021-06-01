@@ -17,6 +17,9 @@
 #define DIR_BUT_FILE -2 // 需要目录类型却找到了文件
 #define FAIL -3 // 什么也没有找到
 
+#define FILE_FOUND 1
+#define FILE_NOFOUND 0
+
 
 /* 目录项结构 */
 /* 凑了凑变成32字节,便于查看二进制debug */
@@ -29,12 +32,14 @@ typedef struct {
    uint8_t f_type;	      // 文件类型
 } __attribute__((packed)) dir_entry;
 
+
 void open_dir(int inode_no, dir_entry* buf);
 void save_dir(dir_entry* dir);
 void zero_dir(int id);
 int create_dir(char* dir_name, int parent_no);
-int search_dir_by_id(char* dir_name, int parent_inode_id, int type);
-int search_dir(char* dir_name, dir_entry* current_directory, int type);
+dir_entry* search_dir_by_id(char* dir_name, int parent_inode_id);
+dir_entry* search_dir(char* dir_name, dir_entry* current_directory);
+dir_entry* parse_full_path(char* full_path);
 
 int rm_dir_by_id(int rm_id, int parent_no, int type);
 int rm_dir_by_name(char* rm_dir_name, int parent_no, int type);

@@ -37,11 +37,13 @@ int read_all_files(dir_entry* directory, dir_entry argv[]);
 void write_dir_entry(dir_entry* dir, int offset);
 
 void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes);
-int read_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes);
+int read_file(char* full_path, uint8_t* content, int nbytes);
 
 int alloc_content_block();
 void free_conten_block(int block_id);
 
+void free_link_list(struct path_node* head);
+void switch_full_path(char* full_path);
 void switch_forward(dir_entry* directory);
 void switch_backward();
 #endif

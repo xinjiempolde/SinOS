@@ -1,6 +1,7 @@
 #ifndef STRING_H
 #define STRING_H
 int strlen(char[]);
+int str_list_len(char** argv, int maxLen);
 void strclear(char* str);
 void strcat(char*, char*);
 int strcmp(char* s1, char* s2);

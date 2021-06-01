@@ -220,18 +220,20 @@ void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbyt
 }
 
 /* 写得不完全，需要修改 */
-int read_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes) {
-    dir_entry parent_dir;
+int read_file(char* full_path, uint8_t* content, int nbytes) {
     inode cur_inode;
     int inode_id;
     unsigned int real_bytes; // 实际应该读取的字节数
     unsigned int i;
 
-    open_dir(parent_inode_no, &parent_dir);
-    inode_id = search_dir(filename, &parent_dir, FT_FILE);
-    if (inode_id == FILE_BUT_DIR || inode_id == FAIL) { // 找到了目录或者完全没有找到
-        return inode_id;
+    dir_entry* dir = parse_full_path(full_path);
+    if (dir == NULL) {
+        return FAIL;
+    } else if (dir->f_type != FT_FILE) {
+        return FILE_BUT_DIR;
     }
+
+    inode_id = dir->i_no;
     open_inode(inode_id, &cur_inode);
 
     real_bytes = nbytes >= cur_inode.i_size ? cur_inode.i_size : nbytes; // 如果读取内容超过实际的大小，只读取实际的字节数
@@ -278,6 +280,50 @@ void free_conten_block(int block_id) {
     }
 }
 
+void free_link_list(struct path_node* head) {
+    struct path_node* p = head->next;
+
+    if (!p) {
+        return; // 只有/节点
+    }
+
+    struct path_node* next = p->next;
+    while (p) {
+        //mem_free_4k(memMan, (uint32_t)p, sizeof(struct path_node));
+        p = next;
+        next = next->next;
+    }
+    head->next = NULL;
+}
+
+/* 给出全路径，切换到当前路径 */
+void switch_full_path(char* full_path) {
+    int i, path_len;
+    char* argv[10] = {NULL};
+    path_len = str_split(full_path, (char**)argv, '/');
+
+    dir_entry* entry;
+    if (full_path[0] == '/') { // 从根路径开始
+        free_link_list(&path_linked_list);
+        cur_dir.i_no = ROOT_INODE_ID;
+
+        for (i = 0; i < path_len; i++) {
+            entry = search_dir_by_id(argv[i], cur_dir.i_no);
+            if (entry == NULL) {
+                printf("file no found");
+                return;
+            } else {
+                printf("name: %s", entry->filename);
+                switch_forward(entry);
+            }
+        }
+    } else { // 从当前目录开始
+        for (i = 0; i < path_len; i++) {
+            switch_forward(search_dir_by_id(argv[i], cur_dir.i_no));
+        }
+    }
+}
+
 /* 向后切换路径 */
 void switch_forward(dir_entry* directory) {
     cur_dir = *directory;
@@ -289,7 +335,7 @@ void switch_forward(dir_entry* directory) {
     }
 
     /* 创建新的节点 */
-    struct path_node* next_node = (struct path_node*)mem_allocate(memMan, sizeof(struct path_node));
+    struct path_node* next_node = (struct path_node*)mem_alloc_4k(memMan, sizeof(struct path_node));
     p->next = next_node;
     memory_copy((uint8_t*)&cur_dir.filename, (uint8_t*)&(next_node->dir_name), strlen(cur_dir.filename));
     next_node->inode_id = directory->i_no;
