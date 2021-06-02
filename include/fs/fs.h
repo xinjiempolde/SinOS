@@ -46,4 +46,6 @@ void free_link_list(struct path_node* head);
 void switch_full_path(char* full_path);
 void switch_forward(dir_entry* directory);
 void switch_backward();
+
+int create_hard_link(char* name, char* srcfile_path);
 #endif

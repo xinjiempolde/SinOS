@@ -166,6 +166,76 @@ void write_dir_entry(dir_entry* dir, int offset) {
 
 }
 
+/**
+ * 在当前目录下创建硬链接
+ */
+int create_hard_link(char* name, char* srcfile_path) {
+    dir_entry* entry = parse_full_path(srcfile_path);
+    if (entry == NULL) {
+        return FAIL; 
+    }
+
+    if (entry->f_type != FT_FILE) {
+        return FAIL;
+    }
+
+    dir_entry diretory;
+    inode parent, cur_inode;
+    int i;
+    int one_indirect_sec[128] = {0};  // 缓存一级间接寻址扇区，能存储128个int类型的inode编号
+    
+    //mem_free_4k(memMan, (uint32_t)tmp, sizeof(dir_entry));
+    
+    memset((uint8_t*)&diretory, sizeof(diretory)); // 清0， 防止栈中残留的脏数据
+
+    /* 准备待创建的目录结构 */
+    diretory = *entry;
+    diretory.i_no = alloc_inode();
+    diretory.f_type = FT_HLINK;
+    strcp(name, diretory.filename, strlen(name));
+
+
+    /* 将目录写入到对应的磁盘中 */
+    save_dir(&diretory);
+    int parent_no = cur_dir.i_no;
+
+    if (parent_no >= 0) {
+        open_inode(parent_no, &parent);
+        for (i = 0; i < DIRECT_BLOCK_NUM; i++) {
+            if (parent.i_sectors[i] == 0) { // 找到该目录结构下还没使用的inode编号
+                parent.i_sectors[i] = diretory.i_no;
+                break;
+            }
+        }
+
+        /* 如果直接寻址数组已满，寻找一级间接寻址数组 */
+        if (i == DIRECT_BLOCK_NUM) {
+            if (parent.i_sectors[ONE_INDIRECT_ID] == 0) { // 一级间接寻址数组还没有分配磁盘块
+                parent.i_sectors[ONE_INDIRECT_ID] = alloc_content_block();
+            } else {    // 如果已经分配了，读取到数组中
+                ata_read(&disks.bus_array[2], parent.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_sec, 512);
+            }
+            for (i = 0; i < 128; i++) {
+                if (one_indirect_sec[i] == 0) {
+                    one_indirect_sec[i] = diretory.i_no;
+                    break;
+                }
+
+            }
+            ata_write(&disks.bus_array[2], parent.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_sec, 512);
+        }
+
+        parent.i_size += 1; // 父亲目录下的文件数量+1
+        save_inode(parent_no, &parent);
+    }
+
+    /* 将当前inode保存到磁盘中 */
+    open_inode(entry->i_no, &cur_inode);
+    cur_inode.i_no = diretory.i_no;
+    save_inode(cur_inode.i_no, &cur_inode);
+
+    return SUCCESS;
+}
 
 // 创建一个文件
 void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes) {
@@ -177,7 +247,7 @@ void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbyt
 
     /* 准备该文件的相关信息 */
     memset((uint8_t*)&file, sizeof(dir_entry));
-    memory_copy((uint8_t*)filename, (uint8_t*)file.filename, strlen(filename));
+    strcp(filename, file.filename, strlen(filename));
     file.f_type = FT_FILE;
     file.i_no = alloc_inode();
     file.file_byte_size = nbytes;
@@ -229,7 +299,7 @@ int read_file(char* full_path, uint8_t* content, int nbytes) {
     dir_entry* dir = parse_full_path(full_path);
     if (dir == NULL) {
         return FAIL;
-    } else if (dir->f_type != FT_FILE) {
+    } else if (dir->f_type != FT_FILE && dir->f_type != FT_HLINK) {
         return FILE_BUT_DIR;
     }
 
@@ -238,11 +308,14 @@ int read_file(char* full_path, uint8_t* content, int nbytes) {
 
     real_bytes = nbytes >= cur_inode.i_size ? cur_inode.i_size : nbytes; // 如果读取内容超过实际的大小，只读取实际的字节数
 
+    printf("sec: %d", cur_inode.i_sectors[0]);
+    printf("inode: %d", inode_id);
 
     for (i = 0; i < real_bytes / 512; i++) { // 先读取够512字节的
         ata_read(&disks.bus_array[2], cur_inode.i_sectors[i], content + 512 * i, 512);
     }
     ata_read(&disks.bus_array[2], cur_inode.i_sectors[i], content + 512 * i, real_bytes % 512); // 不够512字节的扇区
+
     return SUCCESS;
 }
 
@@ -256,15 +329,14 @@ int alloc_content_block() {
         } else {
             r = sb.free[1];
             ata_write(&disks.bus_array[2], r, (uint8_t*)sb.free, sizeof(uint32_t) * (NGROUP+1));
-            return r;
         }
     } else {
         r = sb.free[sb.free[0]];
         sb.free[0]--;
-        return r;
     }
 
     ata_write(&disks.bus_array[2], SB_LBA, (uint8_t*)&sb, 512);
+    return r;
 }
 
 /* 需要进行修改 */

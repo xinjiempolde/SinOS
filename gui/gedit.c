@@ -4,6 +4,7 @@
 #include <gui/vga.h>
 #include <cpu/timer.h>
 #include <libc/string.h>
+#include <libc/mem.h>
 extern LayerManager* layman;
 extern char key_buff[256];
 extern bool readable;
@@ -31,6 +32,8 @@ int gedit_run() {
     MemMan* memMan = (MemMan*)MEM_MAN_ADDR;
 
     uint8_t* gedit_buf = (uint8_t*)mem_alloc_4k(memMan, DFT_EDIT_W * DFT_EDIT_H);
+
+    memset(gedit_buf, (DFT_EDIT_W * DFT_EDIT_H + 0xfff) & 0xfffff000);
 
     init_gedit_buf(gedit_buf, DFT_EDIT_W, DFT_EDIT_H);
     gedit_layer = alloc_layer(layman, gedit_buf, DFT_EDIT_H, DFT_EDIT_W, 6);

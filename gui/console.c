@@ -151,12 +151,13 @@ void parse_cmd(char* cmd_str) {
         dir_entry file_array[141]; // 一个路径下最多13+128个文件，文件名最长15个字符
         int file_num = read_all_files(&cur_dir, file_array);
 
-        printf("file_num: %d", file_num);
         for (i = 0; i < file_num; i++) {
             if (file_array[i].f_type == FT_DIRECOTRY) {
                 console_print(BRIGHT_BLUE, "%s ", file_array[i].filename);
             } else if (file_array[i].f_type == FT_FILE) {
                 console_print(DARK_GREEN, "%s ", file_array[i].filename);
+            } else if (file_array[i].f_type == FT_HLINK) {
+                console_print(BRIGHT_YELLOW, "%s ", file_array[i].filename);
             }
         }
         cursorX = DFT_CSL_BOR;
@@ -198,6 +199,7 @@ void parse_cmd(char* cmd_str) {
         create_file(cur_dir.i_no ,argv[3], (uint8_t*)(argv[1]), strlen(argv[1]));
     } else if (strcmp(argv[0], "rm") == 0) {
         rm_dir_by_name(argv[1], cur_dir.i_no, FT_FILE);
+        rm_dir_by_name(argv[1], cur_dir.i_no, FT_HLINK);
     } else if (strcmp(argv[0], "rmdir") == 0) {
         rm_dir_by_name(argv[1], cur_dir.i_no, FT_DIRECOTRY);
     } else if (strcmp(argv[0], "gedit") == 0) {
@@ -205,11 +207,10 @@ void parse_cmd(char* cmd_str) {
     } else if (strcmp(argv[0], "format") == 0) {
         init_fs(TRUE);
     } else if (strcmp(argv[0], "ln") == 0) {
-        dir_entry* dir = parse_full_path(argv[1]);
-        if (dir == NULL) {
-            console_printfn("%s doesn't exists", argv[1]);
+        int status = create_hard_link(argv[2], argv[1]);
+        if (status == FAIL) {
+            console_printfn("create hard link fails");
         }
-        printf("%s", dir->filename);
     } else {
         put_str_refresh(console_layer, cursorX, cursorY, "command not found", WHITE);
         cursorY = console_newline(console_layer, cursorY);
