@@ -9,6 +9,7 @@
 #include <fs/fs.h>
 #include <kernel/pci.h>
 #include <gui/gedit.h>
+#include <fs/inode.h>
 
 extern LayerManager* layman;
 extern char key_buff[256];
@@ -133,7 +134,6 @@ void console_run() {
 }
 
 void parse_cmd(char* cmd_str) {
-    int i;
     char* argv[5] = {NULL};
     clear_argv(argv);
     str_split(cmd_str, (char**)argv, ' ');
@@ -148,33 +148,11 @@ void parse_cmd(char* cmd_str) {
         cursorX = DFT_CSL_BOR;
         cursorY = DFT_CSL_TIT_H;
     } else if (strcmp(argv[0],"ls") == 0) {
-        dir_entry file_array[141]; // 一个路径下最多13+128个文件，文件名最长15个字符
-        int file_num = read_all_files(&cur_dir, file_array);
-
-        for (i = 0; i < file_num; i++) {
-            if (file_array[i].f_type == FT_DIRECOTRY) {
-                console_print(BRIGHT_BLUE, "%s ", file_array[i].filename);
-            } else if (file_array[i].f_type == FT_FILE) {
-                console_print(DARK_GREEN, "%s ", file_array[i].filename);
-            } else if (file_array[i].f_type == FT_HLINK) {
-                console_print(BRIGHT_YELLOW, "%s ", file_array[i].filename);
-            }
-        }
-        cursorX = DFT_CSL_BOR;
-        cursorY = console_newline(console_layer, cursorY);
-
+        cmd_ls(argv);
     } else if (strcmp(argv[0], "lspci") == 0) {
         init_pcilist();
     } else if (strcmp(argv[0], "cat") == 0){ // 需要进行修改
-        uint8_t sector[512] = {0};
-        int status = read_file(argv[1], sector, 512);
-        if (status == FILE_BUT_DIR) {
-            console_printfn("%s is a directory!", argv[1]);
-        } else if (status == FAIL) {
-            console_printfn("%s doesn't exist!", argv[1]);
-        } else {
-            console_printfn("%s", (char*)sector);
-        }
+        cmd_cat(argv);
     } else if (strcmp(argv[0], "mkdir") == 0) {
         int status = create_dir(argv[1], cur_dir.i_no);
         if (status == FAIL) {
@@ -211,6 +189,8 @@ void parse_cmd(char* cmd_str) {
         if (status == FAIL) {
             console_printfn("create hard link fails");
         }
+    } else if (strcmp(argv[0], "mv") == 0) {
+        cmd_mv(argv);
     } else {
         put_str_refresh(console_layer, cursorX, cursorY, "command not found", WHITE);
         cursorY = console_newline(console_layer, cursorY);
@@ -296,4 +276,89 @@ void cmd_gedit(char** argv) {
     transfer((char*)content, DFT_EDIT_CON_W, line_num, buf);
 
     create_file(cur_dir.i_no, argv[1], (uint8_t*)buf, strlen(buf));
+}
+
+void cmd_ls(char** argv) {
+    int i, file_num;
+    dir_entry file_array[141]; // 一个路径下最多13+128个文件，文件名最长15个字符
+    int len = len_argv(argv);
+
+    switch (len) {
+        case 1:
+            file_num = read_all_files(&cur_dir, file_array);
+            break;
+        case 2:
+        {
+            dir_entry* dir = parse_full_path(argv[1]);
+            if (dir == NULL) {
+                console_printfn("%s doesn't exists!", argv[1]);
+                return;
+            } else if (dir->f_type != FT_DIRECOTRY) {
+                console_printfn("%s is not a directory", argv[1]);
+                return;
+            } else {
+                file_num = read_all_files(dir, file_array);
+            }
+            break;
+        }
+        default:
+            console_printfn("ls only supports 1 arguements, bug get %d", len-1);
+            return;
+            break;
+    }
+    for (i = 0; i < file_num; i++) {
+        if (file_array[i].f_type == FT_DIRECOTRY) {
+            console_print(BRIGHT_BLUE, "%s ", file_array[i].filename);
+        } else if (file_array[i].f_type == FT_FILE) {
+            console_print(DARK_GREEN, "%s ", file_array[i].filename);
+        } else if (file_array[i].f_type == FT_HLINK) {
+            console_print(BRIGHT_YELLOW, "%s ", file_array[i].filename);
+        }
+    }
+    cursorX = DFT_CSL_BOR;
+    cursorY = console_newline(console_layer, cursorY);
+}
+
+void cmd_cat(char** argv) {
+    int len = len_argv(argv);
+    if (len != 2) {
+        console_printfn("cat needs 1 arguement, but get %d", len-1);
+        return;
+    }
+
+    dir_entry* dir = parse_full_path(argv[1]);
+    if (dir == NULL) {
+        console_printfn("%s doesn't exsits", argv[1]);
+        return;
+    } else if (dir->f_type != FT_FILE) {
+        console_printfn("%s is not a file", argv[1]);
+        return;
+    }
+
+    uint8_t sector[1024] = {0};
+    read_file(argv[1], sector, 512);
+    console_printfn("%s", sector);
+}
+
+void cmd_mv(char** argv) {
+    int len = len_argv(argv);
+    if (len != 3) {
+        console_printfn("mv needs 2 arguments, bug get %d", len-1);
+    }
+
+    dir_entry* dir = parse_full_path(argv[1]);
+    if (dir == NULL) {
+        console_printfn("%s doesn't exist", argv[1]);
+        return;
+    }
+
+    dir_entry* dest_dir = parse_full_path(argv[2]);
+    if (dest_dir == NULL) {
+        console_printfn("destination %s doesn's exist", argv[2]);
+        return;
+    }
+
+    dir_entry* parent_dir = get_parent_dir(argv[1]);
+    inode parent_inode;
+    open_inode(parent_dir->i_no, &parent_inode);
 }

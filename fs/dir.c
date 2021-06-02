@@ -100,6 +100,44 @@ int create_dir(char* dir_name, int parent_no) {
     return SUCCESS;
 }
 
+void add_exist_inode(int parent_no, int add_id) {
+    inode parent;
+    int i;
+    int one_indirect_sec[128] = {0};  // 缓存一级间接寻址扇区，能存储128个int类型的inode编号
+    int flag = 0;
+    if (parent_no >= 0) {
+        open_inode(parent_no, &parent);
+        for (i = 0; i < DIRECT_BLOCK_NUM; i++) {
+            if (parent.i_sectors[i] == 0) { // 找到该目录结构下还没使用的inode编号
+                flag = 1;
+                parent.i_sectors[i] = add_id;
+                break;
+            }
+        }
+
+        /* 如果直接寻址数组已满，寻找一级间接寻址数组 */
+        if (flag == 0) {
+            if (parent.i_sectors[ONE_INDIRECT_ID] == 0) { // 一级间接寻址数组还没有分配磁盘块
+                parent.i_sectors[ONE_INDIRECT_ID] = alloc_content_block();
+            } else {    // 如果已经分配了，读取到数组中
+                ata_read(&disks.bus_array[2], parent.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_sec, 512);
+            }
+            for (i = 0; i < 128; i++) {
+                if (one_indirect_sec[i] == 0) {
+                    one_indirect_sec[i] = add_id;
+                    break;
+                }
+
+            }
+            ata_write(&disks.bus_array[2], parent.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_sec, 512);
+        }
+
+        parent.i_size += 1; // 父亲目录下的文件数量+1
+        save_inode(parent_no, &parent);
+    }
+
+}
+
 /**
  * 在目录下搜索指定名称的目录项，如果找到，返回目录项dir_entry
  * 若没有找到，返回NULL
@@ -153,11 +191,16 @@ dir_entry* parse_full_path(char* full_path) {
     int i;
     char* argv[10] = {NULL};
     int current_i;
+    dir_entry* tmp_dir = (dir_entry*)mem_alloc_4k(memMan, sizeof(dir_entry));
+
+    /* 如果只有根路径 */
+    if (strlen(full_path) == 1 && full_path[0] == '/') {
+        open_dir(ROOT_INODE_ID, tmp_dir);
+        return tmp_dir;
+    }
 
     str_split(full_path, (char**)argv, '/');
-
     int listLen = str_list_len(argv, 10);
-    dir_entry* tmp_dir;
 
     if (full_path[0] == '/') { // 从根目录开始解析
         current_i = ROOT_INODE_ID;
@@ -180,6 +223,20 @@ dir_entry* parse_full_path(char* full_path) {
     return tmp_dir;
 }
 
+dir_entry* get_parent_dir(char* full_path) {
+    char* string = (char*)mem_alloc_4k(memMan, sizeof(char)*(strlen(full_path)+1));
+    strcp(full_path, string, strlen(full_path));
+    int i = 0, index;
+    while (string[i] != '\0') {
+        if (string[i] == '/') {
+            index = i;
+        }
+    }
+
+    string[index] = '\0';
+    return parse_full_path(string);
+}
+
 /**
  * 删除目录下的一个目录项，parent_no为父目录的inode_id
  */
@@ -196,25 +253,39 @@ int rm_dir_by_name(char* rm_dir_name, int parent_no, int type) {
 }
 
 int rm_dir_by_id(int rm_id, int parent_no, int type) {
-    unsigned int i, j;
-    inode parent_inode, cur_inode;
+    unsigned int i;
+    inode cur_inode;
 
     /* 如果删除的是文件，需要处理block_bitmap */
     if (type == FT_FILE) {
         open_inode(rm_id, &cur_inode);
-        for (i = 0; i < cur_inode.i_size; i++) {
+        unsigned int sec_size = (cur_inode.i_size+511) / 512; // 向上取整
+        printf("sec_size: %d", sec_size);
+        for (i = 0; i < sec_size; i++) {
+            printf("free content block");
             free_conten_block(cur_inode.i_sectors[i]);
         }    
     }
 
     zero_dir(rm_id); // 清空目录
     free_inode(rm_id); // 清空inode
-    open_inode(parent_no, &parent_inode);
 
-    
+    rm_dir_without_free(rm_id, parent_no);
+    return 0;
+
+}
+
+/* 从索引数组中删除，但并不删除对应的inode、dir、和磁盘块 */
+void rm_dir_without_free(int rm_id, int parent_no) {
+    inode parent_inode;
+    unsigned int i, j;
+    int flag = 0;
+
+    open_inode(parent_no, &parent_inode);
     /* 将本目录项的inode从父亲inode中移除 */
     for (i = 0; i < parent_inode.i_size; i++) {
         if (parent_inode.i_sectors[i] == (unsigned int)rm_id) {
+            flag = 1;
             // 后面的元素往前移动
             for (j = i; j < parent_inode.i_size - 1; j++) {
                 parent_inode.i_sectors[j] = parent_inode.i_sectors[j+1];
@@ -223,11 +294,25 @@ int rm_dir_by_id(int rm_id, int parent_no, int type) {
             break;
         }
     }
+    
+    /* 在直接索引区域没有找到 */
+    if (flag == 0) {
+        int one_indrect_array[128] = {0};
+        ata_read(&disks.bus_array[2], parent_inode.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indrect_array, 512);
+        for (i = 0; i < 128; i++) {
+            if (one_indrect_array[i] == rm_id) {
+                for (j = i; j < 128 - 1; j++) {
+                    one_indrect_array[j] = one_indrect_array[j+1];
+                }
+                one_indrect_array[j] = 0;
+            }
+
+        }
+        ata_write(&disks.bus_array[2], parent_inode.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indrect_array, 512);
+    }
+
     parent_inode.i_size--;
     save_inode(parent_no, &parent_inode);
-
-    return 0;
-
 }
 
 /* 将指定id的目录项清0 */

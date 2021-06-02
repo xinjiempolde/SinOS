@@ -61,7 +61,7 @@ void init_group() {
         leader_sec_id = data.free[1];
         free_start_sec_id = leader_sec_id + 1;
 
-        if (leader_sec_id > 4000) {
+        if (leader_sec_id > 400) {
             break;
         }
     }
@@ -250,6 +250,7 @@ void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbyt
     strcp(filename, file.filename, strlen(filename));
     file.f_type = FT_FILE;
     file.i_no = alloc_inode();
+
     file.file_byte_size = nbytes;
 
 
@@ -273,13 +274,15 @@ void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbyt
 
     // 不足512字节的扇区
     block_no = alloc_content_block();
+    printf("alloc content block id: %d", block_no);
     cur_inode.i_sectors[nbytes / 512] = block_no;
     memset(block_sector, 512);
     memory_copy(content + (nbytes / 512) * 512, block_sector, nbytes % 512);
     ata_write(&disks.bus_array[2], block_no, block_sector, 512);
 
     cur_inode.i_no = file.i_no;
-    cur_inode.i_size = nbytes; // 创建文件的文件大小
+    cur_inode.i_size = nbytes; // 创建文件的字节大小
+    printf("isize:%d", cur_inode.i_size);
     save_inode(cur_inode.i_no, &cur_inode); // 保存该文件的inode
 
     /* 保存父亲目录的信息 */
@@ -307,9 +310,6 @@ int read_file(char* full_path, uint8_t* content, int nbytes) {
     open_inode(inode_id, &cur_inode);
 
     real_bytes = nbytes >= cur_inode.i_size ? cur_inode.i_size : nbytes; // 如果读取内容超过实际的大小，只读取实际的字节数
-
-    printf("sec: %d", cur_inode.i_sectors[0]);
-    printf("inode: %d", inode_id);
 
     for (i = 0; i < real_bytes / 512; i++) { // 先读取够512字节的
         ata_read(&disks.bus_array[2], cur_inode.i_sectors[i], content + 512 * i, 512);

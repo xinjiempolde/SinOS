@@ -32,4 +32,7 @@ int len_argv(char** argv);
 void clear_argv(char** argv);
 
 void cmd_gedit(char** argv);
+void cmd_ls(char** argv);
+void cmd_cat(char** argv);
+void cmd_mv(char** argv);
 #endif
