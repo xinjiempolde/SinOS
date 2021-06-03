@@ -191,6 +191,8 @@ void parse_cmd(char* cmd_str) {
         }
     } else if (strcmp(argv[0], "mv") == 0) {
         cmd_mv(argv);
+    } else if (strcmp(argv[0], "cp") == 0) {
+        cmd_cp(argv);
     } else {
         put_str_refresh(console_layer, cursorX, cursorY, "command not found", WHITE);
         cursorY = console_newline(console_layer, cursorY);
@@ -364,4 +366,26 @@ void cmd_mv(char** argv) {
     printf("parent_ino:%d", parent_dir->i_no);
     rm_dir_without_free(dir->i_no, parent_dir->i_no);
     add_exist_inode(dest_dir->i_no, dir->i_no);
+}
+
+void cmd_cp(char** argv) {
+    int len = len_argv(argv);
+    if (len != 3) {
+        console_printfn("cp needs 2 arguments, bug get %d", len-1);
+    }
+
+    dir_entry* dir = parse_full_path(argv[1]);
+    if (dir == NULL) {
+        console_printfn("%s doesn't exist", argv[1]);
+        return;
+    }
+
+    dir_entry* dest_dir = parse_full_path(argv[2]);
+    if (dest_dir == NULL) {
+        console_printfn("destination %s doesn's exist", argv[2]);
+        return;
+    }
+
+    copy_file(dest_dir->i_no, dir->i_no);
+
 }

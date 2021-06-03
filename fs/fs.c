@@ -77,7 +77,14 @@ void init_fs(bool value) {
     init_all_disk(&disks);
     ata_read(&disks.bus_array[2], SB_LBA, (uint8_t*)&sb, 512);
     if (sb.magic == 0x66 && !value) {
-        return; // 已经有文件系统了，不需要初始化
+        open_dir(ROOT_INODE_ID, &cur_dir); // 设置当前的目录
+        // 初始化路径双向链表
+        memory_copy((uint8_t*)cur_dir.filename, (uint8_t*)path_linked_list.dir_name, strlen(cur_dir.filename));
+        path_linked_list.inode_id = cur_dir.i_no;
+        path_linked_list.pre = NULL;
+        path_linked_list.next = NULL;
+        path_tail = &path_linked_list;
+        return; // 已经有文件系统了，不需要初始化磁盘了
     }
     
     init_sb(&sb);
@@ -292,6 +299,52 @@ void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbyt
     
 }
 
+void copy_file(int dest_no, int file_no) {
+    /* 先复制dir_entry信息，只需要改变inode_id即可 */
+    dir_entry file_entry;
+    open_dir(file_no, &file_entry);
+    file_entry.i_no = alloc_inode();
+    save_dir(&file_entry);
+
+    /* 再复制inode信息，除了改变inode_id，还得重新给文件内容分配空闲磁盘块 */
+    inode file;
+    int i;
+    int flag = 0;
+    uint8_t sector[512] = {0};
+
+    open_inode(file_no, &file);
+    file.i_no = file_entry.i_no;
+    /* 复制直接索引磁盘块 */
+    for (i = 0; i < DIRECT_BLOCK_NUM; i++) {
+        if (file.i_sectors[i] == 0) {
+            flag = 1;
+            break;
+        }
+        ata_read(&disks.bus_array[2], file.i_sectors[i], (uint8_t*)sector, 512);
+        file.i_sectors[i] = alloc_content_block();
+        ata_write(&disks.bus_array[2], file.i_sectors[i], (uint8_t*)sector, 512);
+    }
+
+    /* 直接寻址数组已满，可能还需要复制一级间接索引 */
+    int one_indirect_array[128] = {0};
+    if (flag == 0) {
+        ata_read(&disks.bus_array[2], file.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_array, 512);
+        for (i = 0; i < 128; i++) {
+            if (one_indirect_array[i] == 0) {
+                break;
+            }
+            ata_read(&disks.bus_array[2], one_indirect_array[i], (uint8_t*)sector, 512);
+            one_indirect_array[i] = alloc_content_block();
+            ata_write(&disks.bus_array[2], one_indirect_array[i], (uint8_t*)sector, 512);
+        }
+        ata_write(&disks.bus_array[2], file.i_sectors[ONE_INDIRECT_ID], (uint8_t*)one_indirect_array, 512);
+    }
+    save_inode(file.i_no, &file);
+
+    /* 将文件inode_id写入到目标目录下 */
+    add_exist_inode(dest_no, file.i_no);
+}
+
 /* 写得不完全，需要修改 */
 int read_file(char* full_path, uint8_t* content, int nbytes) {
     inode cur_inode;
@@ -382,10 +435,8 @@ void switch_full_path(char* full_path) {
         for (i = 0; i < path_len; i++) {
             entry = search_dir_by_id(argv[i], cur_dir.i_no);
             if (entry == NULL) {
-                printf("file no found");
                 return;
             } else {
-                printf("name: %s", entry->filename);
                 switch_forward(entry);
             }
         }

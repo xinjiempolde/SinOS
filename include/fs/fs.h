@@ -36,6 +36,7 @@ int read_all_files(dir_entry* directory, dir_entry argv[]);
 
 void write_dir_entry(dir_entry* dir, int offset);
 
+void copy_file(int dest_no, int file_no);
 void create_file(int parent_inode_no, char* filename, uint8_t* content, int nbytes);
 int read_file(char* full_path, uint8_t* content, int nbytes);
 
