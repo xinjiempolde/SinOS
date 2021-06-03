@@ -17,6 +17,10 @@
 #define DFT_CSL_H     \
     (DFT_CSL_TIT_H + DFT_CSL_CON_H * CHAR_H + DFT_CSL_BOR) // default console height
 
+typedef struct {
+    char username[20];
+    int userid;
+} User;
 
 void init_console_buf(uint8_t* buf, int weight, int height);
 int console_newline(Layer* layer, int cursorY);

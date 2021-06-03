@@ -13,8 +13,10 @@
 
 extern LayerManager* layman;
 extern char key_buff[256];
+User current_user;
 Layer* console_layer;
 bool readable = TRUE;
+static int status = 0;
 static int cursorX = DFT_CSL_BOR + 2*CHAR_W;
 static int cursorY = DFT_CSL_TIT_H;
 static MemMan* memMan = (MemMan*)MEM_MAN_ADDR;
@@ -79,10 +81,12 @@ void console_run() {
     init_console_buf(console_buf, DFT_CSL_W, DFT_CSL_H);
     console_layer = alloc_layer(layman, console_buf, DFT_CSL_H, DFT_CSL_W, 6);
     move_layer(console_layer, 200, 200);
+    console_print(WHITE, "username:");
     while (1) {
         if (!readable) {
             continue;
         }
+
         /* keyboard buff is not null */
         if (key_buff[kb_idx] != '\0') {
             if (key_buff[kb_idx] == KEY_BACKSPACE) {
@@ -113,7 +117,11 @@ void console_run() {
             } else {
                 append(cmd, key_buff[kb_idx]);        
                 fill_rect(console_buf, DFT_CSL_W, cursorX, cursorY, CHAR_W, CHAR_H, BLACK);
-                put_char(console_buf, DFT_CSL_W, cursorX, cursorY, key_buff[kb_idx], WHITE);
+                if (status == 2) {
+                    put_char(console_buf, DFT_CSL_W, cursorX, cursorY, '*', WHITE);
+                } else {
+                    put_char(console_buf, DFT_CSL_W, cursorX, cursorY, key_buff[kb_idx], WHITE);
+                }
                 repaint_single_layer(console_layer, cursorX, cursorY, CHAR_W, CHAR_H);
                 cursorX += CHAR_W;
             }
@@ -128,6 +136,12 @@ void console_run() {
             }
             restart_timer(cursorTimer);
         }
+
+        if (status == 1) {
+            console_print(WHITE,"password:");
+            status++;
+        }
+
         fill_rect(console_buf, DFT_CSL_W, cursorX, cursorY, 8, 16, cursorColor);
         repaint_single_layer(console_layer, cursorX, cursorY, CHAR_W, CHAR_H);
     }
@@ -176,10 +190,23 @@ void parse_cmd(char* cmd_str) {
     } else if (strcmp(argv[0], "echo") == 0) {
         create_file(cur_dir.i_no ,argv[3], (uint8_t*)(argv[1]), strlen(argv[1]));
     } else if (strcmp(argv[0], "rm") == 0) {
-        rm_dir_by_name(argv[1], cur_dir.i_no, FT_FILE);
-        rm_dir_by_name(argv[1], cur_dir.i_no, FT_HLINK);
+        int status = rm_dir_by_name(argv[1], cur_dir.i_no, FT_FILE);
+        if (status == NO_PERMISSION) {
+            console_printfn("%s no permission", current_user.username);
+            return;
+        }
+
+        status = rm_dir_by_name(argv[1], cur_dir.i_no, FT_HLINK);
+        if (status == NO_PERMISSION) {
+            console_printfn("%d no permission", current_user.username);
+            return;
+        }
     } else if (strcmp(argv[0], "rmdir") == 0) {
-        rm_dir_by_name(argv[1], cur_dir.i_no, FT_DIRECOTRY);
+        int status = rm_dir_by_name(argv[1], cur_dir.i_no, FT_DIRECOTRY);
+        if (status == NO_PERMISSION) {
+            console_printfn("%d no permission", current_user.username);
+            return;
+        }
     } else if (strcmp(argv[0], "gedit") == 0) {
         cmd_gedit(argv);
     } else if (strcmp(argv[0], "format") == 0) {
@@ -194,8 +221,21 @@ void parse_cmd(char* cmd_str) {
     } else if (strcmp(argv[0], "cp") == 0) {
         cmd_cp(argv);
     } else {
-        put_str_refresh(console_layer, cursorX, cursorY, "command not found", WHITE);
-        cursorY = console_newline(console_layer, cursorY);
+        if (status == 0) {
+            if (strcmp(argv[0], "root") == 0) {
+                current_user.userid = 0;
+            } else {
+                current_user.userid = 1;
+            }
+            strcp(argv[0], current_user.username, strlen(argv[0]));
+            status++;
+        } else if(status == 2) {
+            status++;
+            console_printfn("%s login success", current_user.username);
+        } else {
+            put_str_refresh(console_layer, cursorX, cursorY, "command not found", WHITE);
+            cursorY = console_newline(console_layer, cursorY);
+        }
     }
 
 }

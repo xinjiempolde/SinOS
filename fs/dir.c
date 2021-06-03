@@ -7,7 +7,9 @@
 #include <gui/vga.h>
 #include <mm/memory.h>
 #include <libc/string.h>
+#include <gui/console.h>
 extern dir_entry cur_dir; // 当前所在的目录的目录项
+extern User current_user;
 extern disk_array disks;
 extern super_block sb;
 static MemMan* memMan = (MemMan*)MEM_MAN_ADDR;
@@ -51,7 +53,7 @@ int create_dir(char* dir_name, int parent_no) {
 
     /* 准备待创建的目录结构 */
     diretory.create_time = 0;
-    diretory.modify_time = 0;
+    diretory.user_id = current_user.userid;
     diretory.f_type = FT_DIRECOTRY;
     diretory.i_no = alloc_inode();
     diretory.file_byte_size = 0;
@@ -265,6 +267,8 @@ int rm_dir_by_name(char* rm_dir_name, int parent_no, int type) {
         return FAIL;
     } else if (rm_dir->f_type != type){
         return FILE_BUT_DIR;
+    } else if (current_user.userid > rm_dir->user_id) {
+        return NO_PERMISSION;
     }
     rm_inode_id = rm_dir->i_no;
     return rm_dir_by_id(rm_inode_id, parent_no, type);

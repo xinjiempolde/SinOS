@@ -1,6 +1,7 @@
 {
     "C_Cpp.errorSquiggles": "Enabled",
     "files.associations": {
-        "super_block.h": "c"
+        "super_block.h": "c",
+        "string.h": "c"
     }
 }

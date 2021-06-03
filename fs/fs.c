@@ -7,6 +7,7 @@
 #include <libc/mem.h>
 #include <mm/memory.h>
 #include <libc/string.h>
+#include <gui/console.h>
 extern disk_array disks;
 static MemMan* memMan = (MemMan*)MEM_MAN_ADDR;
 super_block sb;
