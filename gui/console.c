@@ -198,13 +198,13 @@ void parse_cmd(char* cmd_str) {
 
         status = rm_dir_by_name(argv[1], cur_dir.i_no, FT_HLINK);
         if (status == NO_PERMISSION) {
-            console_printfn("%d no permission", current_user.username);
+            console_printfn("%s no permission", current_user.username);
             return;
         }
     } else if (strcmp(argv[0], "rmdir") == 0) {
         int status = rm_dir_by_name(argv[1], cur_dir.i_no, FT_DIRECOTRY);
         if (status == NO_PERMISSION) {
-            console_printfn("%d no permission", current_user.username);
+            console_printfn("%s no permission", current_user.username);
             return;
         }
     } else if (strcmp(argv[0], "gedit") == 0) {
@@ -372,7 +372,7 @@ void cmd_cat(char** argv) {
     if (dir == NULL) {
         console_printfn("%s doesn't exsits", argv[1]);
         return;
-    } else if (dir->f_type != FT_FILE) {
+    } else if (dir->f_type != FT_FILE && dir->f_type != FT_HLINK) {
         console_printfn("%s is not a file", argv[1]);
         return;
     }
