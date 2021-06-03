@@ -359,6 +359,9 @@ void cmd_mv(char** argv) {
     }
 
     dir_entry* parent_dir = get_parent_dir(argv[1]);
-    inode parent_inode;
-    open_inode(parent_dir->i_no, &parent_inode);
+
+    printf("i_no: %d", dir->i_no);
+    printf("parent_ino:%d", parent_dir->i_no);
+    rm_dir_without_free(dir->i_no, parent_dir->i_no);
+    add_exist_inode(dest_dir->i_no, dir->i_no);
 }

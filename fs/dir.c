@@ -226,14 +226,32 @@ dir_entry* parse_full_path(char* full_path) {
 dir_entry* get_parent_dir(char* full_path) {
     char* string = (char*)mem_alloc_4k(memMan, sizeof(char)*(strlen(full_path)+1));
     strcp(full_path, string, strlen(full_path));
-    int i = 0, index;
+    dir_entry* dir = (dir_entry*)mem_alloc_4k(memMan, sizeof(dir_entry));
+    int syb_len = 0, last_syb = 0; // 反斜杠/的数量
+    int i = 0;
     while (string[i] != '\0') {
         if (string[i] == '/') {
-            index = i;
+            syb_len++;
+            last_syb = i;
+        }
+        i++;
+    }
+
+    if (syb_len == 0) {
+        return &cur_dir;
+    }
+
+    if (syb_len == 1) {
+        if (string[0] == '/') {
+            open_dir(ROOT_INODE_ID, dir);
+            return dir;
+        } else {
+            string[last_syb] = '\0';
+            return parse_full_path(string);
         }
     }
 
-    string[index] = '\0';
+    string[last_syb] = '\0';
     return parse_full_path(string);
 }
 
